@@ -1,0 +1,13 @@
+{
+  "name": "zimbermanne-artist-website",
+  "version": "1.0.0",
+  "description": "Official website of Zimbermanne, Afro Soul Pop artist",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "UNLICENSED"
+}
