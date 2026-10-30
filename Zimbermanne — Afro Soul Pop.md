@@ -16,7 +16,7 @@ Music that moves between the warmth of a city night and the cold drama of a wint
 
 Zimbermanne is a music artist making Afro Soul Pop: smooth, melodic records built on groove, emotion and storytelling. His work speaks about love, rhythm and the connection between people, wrapped in a refined, cinematic style.
 
-Each record is its own world. One glows with late-night city lights and romance; the other steps into a snow-covered, mysterious chapter of diary-style confession.
+Each record is its own world. One glows with late-night city lights and romance; the second steps into a snow-covered, mysterious chapter of diary-style confession; the third explores ambition, wealth, and industrial soul.
 
 **Love**Honest, grown-up songs about the heart.
 
@@ -34,11 +34,9 @@ Music was always there. It held him when he was happy, and it sat beside him whe
 
 That question would not leave him. He saw people around him who felt the same things but had no way to put them into words. He realised that a song can say what a speech cannot: it can enter a crowded room, a lonely bedroom or a long bus ride, and speak to one heart at a time.
 
-Because he already loved music so deeply, starting did not feel like a leap. It felt like coming home. He did not need to become someone else; he only had to open his mouth and let the messages he had carried for years finally become songs.
-
 Today, every record is a letter to society, written in rhythm and soul. Some are tender, some are bold, and some carry the weight of stories people rarely hear. And behind each one is still that same listener, hoping that somewhere, someone presses play and feels a little less alone.
 
-## DiscographyTwo albums
+## DiscographyThree albums
 
 Mimi Ni Odogwu album cover
 
@@ -59,9 +57,9 @@ Afro Soul PopRomanticCity nights
 7. [No Be Matter Chidimma ft. Zimbermanne](https://suno.com/song/a3f811bb-8d7f-47e9-bae4-221334b278d1)
 8. [Taarifa Yako Maino ft. Zimbermanne](https://suno.com/song/194eccc2-27a5-41eb-aa6c-f02355c0a645)
 9. [Taarifa Yako (Techno Version)](https://suno.com/song/194eccc2-27a5-41eb-aa6c-f02355c0a645)
-10. [Ione ile boti baharini](https://suno.com/song/82bcd874-4c22-45b1-a2e3-a40a27a73d82)
+10. [Ione ile boti baharini](https://suno.com/song/5a6986d0-c80d-4ac7-9f43-1e8abd385959)
 11. [Mimi na Tajiri sana](https://suno.com/song/639f3661-1e30-4c5b-9125-057c73680bb8)
-12. *Pesa inaongea sana*
+12. [Pesa inaongea sana Malume ft. Zimbermanne](https://suno.com/song/82bcd874-4c22-45b1-a2e3-a40a27a73d82)
 13. [odogwu_shift (Remix, Affirmation Version)](https://suno.com/song/c2386c98-42a5-4499-9bdd-5e809b419547)
 14. [200 Billion](https://suno.com/song/153a3c59-3e28-46ac-941d-f10c3c9129fd)
 
@@ -78,6 +76,23 @@ Afro Soul PopCinematicStorytelling
 1. [Peak-Time Pulse](https://suno.com/song/727876c2-3c65-4cf3-95cf-88a22d61a9cb)
 2. [Highway Velocity Chase](https://suno.com/song/affe32c7-3646-4623-9935-9b733317bbe2)
 3. [Internet Babe](https://suno.com/song/ec500098-5a80-4d09-bbe0-75ef60109a78)
+
+The Weight of Gold: The Chronicles album cover
+
+Album 03
+
+### The Weight of Gold: The Chronicles
+
+A heavy, atmospheric blend of trip-hop, industrial groove and storytelling. A reflective journey exploring wealth, ambition, and the true cost of chasing power.
+
+Trip-HopIndustrialElectronic
+
+1. [Drown in Me](https://suno.com/song/22b20db6-d2de-4495-ba27-23faecfa1920)
+2. [The Blonde Front Desk](https://suno.com/song/b96ee764-745b-4c29-a309-a8bec064aed7)
+3. [Bless This Man Tonight](https://suno.com/song/85894bcf-1b38-4e82-9146-e017958c79a5)
+4. [Let It Come](https://suno.com/song/6acfaeba-e1a0-4a37-bf61-88edc653a84d)
+5. [Muddy Waters](https://suno.com/song/03522a97-8631-418d-98c0-64ea0ed6de4e)
+6. [Thank You for Loving Me](https://suno.com/song/0f75f87b-d0e0-493a-8579-7b7be9ff424e)
 
 ## Get in touchBookings & listening
 

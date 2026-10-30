@@ -1,0 +1,210 @@
+{
+  "artist": "Zimbermanne",
+  "genre": "Afro Soul Pop",
+  "handle": "@zimbermannelit",
+  "sunoProfile": "https://suno.com/@zimbermannelit",
+  "lastUpdated": "2026-03-30",
+  "albums": [
+    {
+      "id": "mimi-ni-odogwu",
+      "number": "Album 01",
+      "title": "Mimi Ni Odogwu",
+      "cover": "https://cdn2.suno.ai/image_df5c9e26-e996-44ae-b9b0-8fcf468533e8.jpeg",
+      "tagline": "Identity, Romance & City Lights",
+      "description": "The title joins Swahili and Igbo: “Mimi ni” means “I am”, and “Odogwu” is a word for a strong, respected man. It is a confident statement of identity, set against glowing city lights and a smooth, romantic Afro Soul Pop sound.",
+      "chips": ["Afro Soul Pop", "Romantic", "City nights"],
+      "tracks": [
+        {
+          "id": "track-1",
+          "title": "Utajiri wako unaanza sasa",
+          "subtitle": "(Remastered)",
+          "url": "https://suno.com/song/10f15313-4ec6-49d6-870d-288439f06937",
+          "duration": "3:45",
+          "lyrics": "[Verse 1]\nNimeamka na maono mapya leo,\nUtajiri sio namba tu kwenye akaunti,\nNi amani ya moyo, na maono ya kesho.\n\n[Chorus]\nUtajiri wako unaanza sasa,\nFungua macho, fikra ziko huru,\nMimi ni Odogwu, mshindi wa maisha!\n\n[Outro]\nAnza sasa, usisubiri kesho."
+        },
+        {
+          "id": "track-2",
+          "title": "Ukombozi wa Kifikra",
+          "url": "https://suno.com/song/6398559a-cb90-4dc7-88a5-ff2b9d7724e7",
+          "duration": "4:02",
+          "lyrics": "[Verse 1]\nUkombozi wa kifikra ndio msingi wa kila kitu,\nUkijitambua wewe ni nani, hakuna anayeweza kukuzuia.\n\n[Chorus]\nInawezekana, inawezekana, Odogwu!\nUkombozi wa kifikra, maisha mapya yanazaliwa."
+        },
+        {
+          "id": "track-3",
+          "title": "Wife’s Best Friend",
+          "url": "https://suno.com/song/4e9e608f-8831-4b7d-84f1-9d6edd64e64e",
+          "duration": "3:30",
+          "lyrics": "[Verse 1]\nShe knows all your secrets, she knows all your smiles,\nWalking together through the longest miles.\n\n[Chorus]\nWife's best friend, holding it together,\nLove and connection that will last forever."
+        },
+        {
+          "id": "track-4",
+          "title": "Inawezekana",
+          "subtitle": "ft. Zimbermanne",
+          "url": "https://suno.com/song/cb0baed3-4715-4df5-b2ae-a7e3069c1f6d",
+          "duration": "3:50",
+          "lyrics": "[Verse 1]\nHakuna kinachoshindikana pale unapoweka nia.\nSimama imara, jiamini, siku mpya imeanza.\n\n[Chorus]\nInawezekana! Ndoto zako zitakamilika."
+        },
+        {
+          "id": "track-5",
+          "title": "Mimi ni Odogwu",
+          "url": "https://suno.com/song/23e9234e-778a-476c-a065-416ffe3ac9e7",
+          "duration": "4:15",
+          "lyrics": "[Intro]\nLEADER: Mimi ni Odogwu, najiona tayari!\nCROWD: Najiona tayari!\n\n[Verse 1]\nJana nilisema 'mimi sina kitu',\nNilihesabu sarafu, moyo mzito.\nLeo nauliza: 'Pesa iko wapi?'\nMacho yamefunguka, fursa kila kona!\n\n[Chorus]\nLEADER: Mimi ni Odogwu, najiona tayari!\nCROWD: Najiona tayari!\nLEADER: Mikono na akili, vyote vinafanya kazi!\nALL: Odogwu! Odogwu!"
+        },
+        {
+          "id": "track-6",
+          "title": "Mke wa Pili",
+          "url": "https://suno.com/song/eec267d4-8601-4d0a-aa6a-46ad4af51ca5",
+          "duration": "3:40",
+          "lyrics": "[Verse 1]\nMapenzi ya dhati hayawezi kupimwa kwa maneno tu,\nHeshima na uaminifu ndio msingi wa nyumba."
+        },
+        {
+          "id": "track-7",
+          "title": "No Be Matter",
+          "subtitle": "Chidimma ft. Zimbermanne",
+          "url": "https://suno.com/song/a3f811bb-8d7f-47e9-bae4-221334b278d1",
+          "duration": "3:55",
+          "lyrics": "[Verse 1]\nNo be matter of talk, na action we dey show,\nWhen Afro rhythm hits, everybody go know.\n\n[Chorus]\nNo be matter, love go lead us home."
+        },
+        {
+          "id": "track-8",
+          "title": "Taarifa Yako",
+          "subtitle": "Maino ft. Zimbermanne",
+          "url": "https://suno.com/song/194eccc2-27a5-41eb-aa6c-f02355c0a645",
+          "duration": "3:25",
+          "lyrics": "[Intro]\nTaarifa yako! Tucheze wote!\n\n[Verse 1]\nMawazo yako ndio ramani yako ya kesho,\nEneza upendo na furaha mahali kote."
+        },
+        {
+          "id": "track-9",
+          "title": "Taarifa Yako",
+          "subtitle": "(Techno Version)",
+          "url": "https://suno.com/song/194eccc2-27a5-41eb-aa6c-f02355c0a645",
+          "duration": "3:10",
+          "lyrics": "[High-energy beat drop]\nTaarifa yako! Techno rhythm taking over the dancefloor."
+        },
+        {
+          "id": "track-10",
+          "title": "Ione ile boti baharini",
+          "url": "https://suno.com/song/5a6986d0-c80d-4ac7-9f43-1e8abd385959",
+          "duration": "3:35",
+          "lyrics": "[Verse 1]\nTazama bahari, boti inasafiri kwa amani,\nSafari ya maisha ina mawimbi, lakini tutafika nchi kavu."
+        },
+        {
+          "id": "track-11",
+          "title": "Mimi na Tajiri sana",
+          "url": "https://suno.com/song/639f3661-1e30-4c5b-9125-057c73680bb8",
+          "duration": "3:50",
+          "lyrics": "[Verse 1]\nUtajiri sio hela pekee, utajiri ni afya na upendo,\nMimi ni tajiri sana kwa sababu nina watu wanaonipenda."
+        },
+        {
+          "id": "track-12",
+          "title": "Pesa inaongea sana",
+          "subtitle": "Malume ft. Zimbermanne",
+          "url": "https://suno.com/song/82bcd874-4c22-45b1-a2e3-a40a27a73d82",
+          "duration": "4:08",
+          "lyrics": "[Verse 1]\nJana nilisema, 'mimi sina kitu',\nLeo nauliza, 'Pesa iko wapi?'\nPesa ikifanya kazi, kesho inakupa nafasi,\nJifunze, wekeza, anza hata kwa kiasi.\n\n[Bridge]\nNitaenda kijijini, nikakae na wazee,\nChini ya mti, swali moja moyoni:\n'Mzee, nifanyeje? Kibati changu hakijai!'\n\n[Chorus]\nPesa inaongea sana, Pesa ikiwa na mpango,\nKesho inakuwa sawa! Kibati cha kijiji kinahitaji kibati imara."
+        },
+        {
+          "id": "track-13",
+          "title": "odogwu_shift",
+          "subtitle": "(Remix, Affirmation Version)",
+          "url": "https://suno.com/song/c2386c98-42a5-4499-9bdd-5e809b419547",
+          "duration": "3:42",
+          "lyrics": "[Affirmation chant]\nI am strong, I am focused, I am Odogwu.\nShift your energy, embrace your greatness."
+        },
+        {
+          "id": "track-14",
+          "title": "200 Billion",
+          "url": "https://suno.com/song/153a3c59-3e28-46ac-941d-f10c3c9129fd",
+          "duration": "3:20",
+          "lyrics": "[Verse 1]\nDreaming big, aiming for two hundred billion,\nHard work, strategy, and relentless faith."
+        }
+      ]
+    },
+    {
+      "id": "a-mafias-diary",
+      "number": "Album 02",
+      "title": "A Mafia’s Diary",
+      "cover": "https://cdn2.suno.ai/e5e52c91-70f9-4c21-9113-24238999085a.jpeg",
+      "tagline": "Power, Loyalty & Snowfall",
+      "description": "A darker, more cinematic chapter. Framed by snowfall and the domes and towers of Moscow, this record reads like pages from a private diary: power, loyalty and tenderness, all carried by the same soulful Afro rhythm.",
+      "chips": ["Afro Soul Pop", "Cinematic", "Storytelling"],
+      "tracks": [
+        {
+          "id": "mafia-1",
+          "title": "Peak-Time Pulse",
+          "url": "https://suno.com/song/727876c2-3c65-4cf3-95cf-88a22d61a9cb",
+          "duration": "3:15",
+          "lyrics": "[Instrumental & Atmospheric Vibe]\nSnow falling quiet over the city lights,\nHeartbeats pulsing in the dark of night."
+        },
+        {
+          "id": "mafia-2",
+          "title": "Highway Velocity Chase",
+          "url": "https://suno.com/song/affe32c7-3646-4623-9935-9b733317bbe2",
+          "duration": "3:30",
+          "lyrics": "[Fast tempo beat]\nSpeeding through the midnight boulevard,\nKeeping secrets close and playing every card."
+        },
+        {
+          "id": "mafia-3",
+          "title": "Internet Babe",
+          "url": "https://suno.com/song/ec500098-5a80-4d09-bbe0-75ef60109a78",
+          "duration": "3:45",
+          "lyrics": "[Verse 1]\nGlowing screens in a cold room,\nInternet babe, clearing out the gloom."
+        }
+      ]
+    },
+    {
+      "id": "the-weight-of-gold",
+      "number": "Album 03",
+      "title": "The Weight of Gold: The Chronicles",
+      "cover": "https://cdn2.suno.ai/image_f1c63dea-d26e-43b6-8063-b3860d739162.jpeg",
+      "tagline": "Ambition, Industrial Grooves & Reflection",
+      "description": "A heavy, atmospheric blend of trip-hop, industrial groove and storytelling. A reflective journey exploring wealth, ambition, and the true cost of chasing power.",
+      "chips": ["Trip-Hop", "Industrial", "Electronic"],
+      "tracks": [
+        {
+          "id": "gold-1",
+          "title": "Drown in Me",
+          "url": "https://suno.com/song/22b20db6-d2de-4495-ba27-23faecfa1920",
+          "duration": "3:40",
+          "lyrics": "[Verse 1]\nDeep bass rolling in the background,\nLost in the rhythms that we found.\n\n[Chorus]\nDrown in me, let the gold wash over you."
+        },
+        {
+          "id": "gold-2",
+          "title": "The Blonde Front Desk",
+          "url": "https://suno.com/song/b96ee764-745b-4c29-a309-a8bec064aed7",
+          "duration": "3:25",
+          "lyrics": "[Verse 1]\nLate check-in at midnight, marble floors,\nStanding right at the hotel doors."
+        },
+        {
+          "id": "gold-3",
+          "title": "Bless This Man Tonight",
+          "url": "https://suno.com/song/85894bcf-1b38-4e82-9146-e017958c79a5",
+          "duration": "4:00",
+          "lyrics": "[Verse 1]\nA prayer spoken in the quiet hour,\nSeeking wisdom, peace and power.\n\n[Chorus]\nBless this man tonight as he walks his path."
+        },
+        {
+          "id": "gold-4",
+          "title": "Let It Come",
+          "url": "https://suno.com/song/6acfaeba-e1a0-4a37-bf61-88edc653a84d",
+          "duration": "3:50",
+          "lyrics": "[Verse 1]\nWhatever the future holds, I'm ready now,\nStanding tall, making my vow.\n\n[Chorus]\nLet it come, let the rain fall down."
+        },
+        {
+          "id": "gold-5",
+          "title": "Muddy Waters",
+          "url": "https://suno.com/song/03522a97-8631-418d-98c0-64ea0ed6de4e",
+          "duration": "3:30",
+          "lyrics": "[Verse 1]\nNavigating through the muddy stream,\nNever letting go of the golden dream."
+        },
+        {
+          "id": "gold-6",
+          "title": "Thank You for Loving Me",
+          "url": "https://suno.com/song/0f75f87b-d0e0-493a-8579-7b7be9ff424e",
+          "duration": "4:10",
+          "lyrics": "[Verse 1]\nThrough the high roads and the valleys low,\nYour love is the constant light I know.\n\n[Chorus]\nThank you for loving me, holding me tight."
+        }
+      ]
+    }
+  ]
+}
