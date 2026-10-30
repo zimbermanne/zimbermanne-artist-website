@@ -4,7 +4,8 @@
   "description": "Official website of Zimbermanne, Afro Soul Pop artist",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "sync": "node sync-suno.js"
   },
   "engines": {
     "node": ">=18"

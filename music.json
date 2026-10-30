@@ -3,7 +3,7 @@
   "genre": "Afro Soul Pop",
   "handle": "@zimbermannelit",
   "sunoProfile": "https://suno.com/@zimbermannelit",
-  "lastUpdated": "2026-03-30",
+  "lastUpdated": "2026-10-30",
   "albums": [
     {
       "id": "mimi-ni-odogwu",
@@ -12,7 +12,11 @@
       "cover": "https://cdn2.suno.ai/image_df5c9e26-e996-44ae-b9b0-8fcf468533e8.jpeg",
       "tagline": "Identity, Romance & City Lights",
       "description": "The title joins Swahili and Igbo: “Mimi ni” means “I am”, and “Odogwu” is a word for a strong, respected man. It is a confident statement of identity, set against glowing city lights and a smooth, romantic Afro Soul Pop sound.",
-      "chips": ["Afro Soul Pop", "Romantic", "City nights"],
+      "chips": [
+        "Afro Soul Pop",
+        "Romantic",
+        "City nights"
+      ],
       "tracks": [
         {
           "id": "track-1",
@@ -47,7 +51,7 @@
         {
           "id": "track-5",
           "title": "Mimi ni Odogwu",
-          "url": "https://suno.com/song/23e9234e-778a-476c-a065-416ffe3ac9e7",
+          "url": "https://suno.com/song/c8839056-5ab0-486b-a7a7-96fcfd84af01",
           "duration": "4:15",
           "lyrics": "[Intro]\nLEADER: Mimi ni Odogwu, najiona tayari!\nCROWD: Najiona tayari!\n\n[Verse 1]\nJana nilisema 'mimi sina kitu',\nNilihesabu sarafu, moyo mzito.\nLeo nauliza: 'Pesa iko wapi?'\nMacho yamefunguka, fursa kila kona!\n\n[Chorus]\nLEADER: Mimi ni Odogwu, najiona tayari!\nCROWD: Najiona tayari!\nLEADER: Mikono na akili, vyote vinafanya kazi!\nALL: Odogwu! Odogwu!"
         },
@@ -128,7 +132,11 @@
       "cover": "https://cdn2.suno.ai/e5e52c91-70f9-4c21-9113-24238999085a.jpeg",
       "tagline": "Power, Loyalty & Snowfall",
       "description": "A darker, more cinematic chapter. Framed by snowfall and the domes and towers of Moscow, this record reads like pages from a private diary: power, loyalty and tenderness, all carried by the same soulful Afro rhythm.",
-      "chips": ["Afro Soul Pop", "Cinematic", "Storytelling"],
+      "chips": [
+        "Afro Soul Pop",
+        "Cinematic",
+        "Storytelling"
+      ],
       "tracks": [
         {
           "id": "mafia-1",
@@ -160,12 +168,16 @@
       "cover": "https://cdn2.suno.ai/image_f1c63dea-d26e-43b6-8063-b3860d739162.jpeg",
       "tagline": "Ambition, Industrial Grooves & Reflection",
       "description": "A heavy, atmospheric blend of trip-hop, industrial groove and storytelling. A reflective journey exploring wealth, ambition, and the true cost of chasing power.",
-      "chips": ["Trip-Hop", "Industrial", "Electronic"],
+      "chips": [
+        "Trip-Hop",
+        "Industrial",
+        "Electronic"
+      ],
       "tracks": [
         {
           "id": "gold-1",
           "title": "Drown in Me",
-          "url": "https://suno.com/song/22b20db6-d2de-4495-ba27-23faecfa1920",
+          "url": "https://suno.com/song/314de336-caa5-4961-a900-545ec800bb4d",
           "duration": "3:40",
           "lyrics": "[Verse 1]\nDeep bass rolling in the background,\nLost in the rhythms that we found.\n\n[Chorus]\nDrown in me, let the gold wash over you."
         },
@@ -193,7 +205,7 @@
         {
           "id": "gold-5",
           "title": "Muddy Waters",
-          "url": "https://suno.com/song/03522a97-8631-418d-98c0-64ea0ed6de4e",
+          "url": "https://suno.com/song/7461c15b-109c-4027-a857-634ad6f7370d",
           "duration": "3:30",
           "lyrics": "[Verse 1]\nNavigating through the muddy stream,\nNever letting go of the golden dream."
         },
