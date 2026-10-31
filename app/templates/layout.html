@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>{% block title %}Zimbermanne{% endblock %}</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <meta name="theme-color" content="#07090f">
+  {% block head %}{% endblock %}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,400&family=Pinyon+Script&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css?v={{ asset_v }}">
+  {% include "_analytics.html" %}
+</head>
+<body class="subpage">
+  <nav>
+    <a href="/" class="brand"><b>Zimbermanne</b></a>
+    <div class="nav-links">
+      <a href="/#albums">Albums</a>
+      <a href="/#subscribe">Fan list</a>
+      <a href="/#contact">Contact</a>
+    </div>
+  </nav>
+  {% block content %}{% endblock %}
+  <footer>© 2026 Zimbermanne · Feel the soul</footer>
+</body>
+</html>

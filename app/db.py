@@ -1,9 +1,11 @@
 """Storage: Postgres on Railway (DATABASE_URL), SQLite file locally."""
 import os
+import secrets
 from datetime import datetime, timezone
 
 from sqlalchemy import (BigInteger, Boolean, Column, DateTime, Integer,
                         MetaData, String, Table, Text, create_engine, select)
+from sqlalchemy.exc import IntegrityError
 
 
 def _database_url() -> str:
@@ -35,6 +37,15 @@ messages = Table(
     Column("email", String(254), nullable=False),
     Column("message", Text, nullable=False),
     Column("emailed", Boolean, nullable=False, default=False),
+)
+
+subscribers = Table(
+    "subscribers", metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("email", String(254), nullable=False, unique=True),
+    Column("token", String(64), nullable=False, unique=True),
+    Column("created_at", DateTime(timezone=True), nullable=False),
+    Column("unsubscribed_at", DateTime(timezone=True), nullable=True),
 )
 
 
@@ -70,3 +81,51 @@ def save_message(name: str, email: str, message: str) -> int:
 def mark_emailed(message_id: int) -> None:
     with engine.begin() as c:
         c.execute(messages.update().where(messages.c.id == message_id).values(emailed=True))
+
+
+def add_subscriber(email: str) -> tuple[str, bool]:
+    """Add (or re-activate) a subscriber. Returns (unsubscribe token, needs_welcome_email)."""
+    email = email.strip().lower()
+    now = datetime.now(timezone.utc)
+    with engine.begin() as c:
+        row = c.execute(select(subscribers.c.token, subscribers.c.unsubscribed_at)
+                        .where(subscribers.c.email == email)).first()
+        if row:
+            if row.unsubscribed_at is None:
+                return row.token, False  # already on the list: no second welcome email
+            c.execute(subscribers.update().where(subscribers.c.email == email)
+                      .values(unsubscribed_at=None, created_at=now))
+            return row.token, True
+    token = secrets.token_urlsafe(24)
+    try:
+        with engine.begin() as c:
+            c.execute(subscribers.insert().values(email=email, token=token, created_at=now))
+    except IntegrityError:  # two simultaneous sign-ups with the same address
+        with engine.connect() as c:
+            row = c.execute(select(subscribers.c.token).where(subscribers.c.email == email)).first()
+        return row.token, False
+    return token, True
+
+
+def subscriber_exists(token: str) -> bool:
+    with engine.connect() as c:
+        return c.execute(select(subscribers.c.id).where(subscribers.c.token == token)).first() is not None
+
+
+def unsubscribe(token: str) -> bool:
+    """Mark the subscriber as unsubscribed. False when the token is unknown."""
+    with engine.begin() as c:
+        res = c.execute(subscribers.update().where(subscribers.c.token == token)
+                        .where(subscribers.c.unsubscribed_at.is_(None))
+                        .values(unsubscribed_at=datetime.now(timezone.utc)))
+        if res.rowcount:
+            return True
+    return subscriber_exists(token)  # already unsubscribed counts as success
+
+
+def list_subscribers(active_only: bool = True) -> list[dict]:
+    q = select(subscribers.c.email, subscribers.c.created_at, subscribers.c.unsubscribed_at)
+    if active_only:
+        q = q.where(subscribers.c.unsubscribed_at.is_(None))
+    with engine.connect() as c:
+        return [dict(r._mapping) for r in c.execute(q.order_by(subscribers.c.id))]

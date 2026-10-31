@@ -1,0 +1,67 @@
+{% extends "layout.html" %}
+{% set page_url = site_url ~ '/song/' ~ track.slug %}
+{% set desc = 'Listen to ' ~ track.title ~ ' by Zimbermanne, from the album ' ~ album.title ~ '. Read the lyrics and stream on Suno.' %}
+{% block title %}{{ track.title }} — Zimbermanne | {{ album.title }}{% endblock %}
+{% block head %}
+  <meta name="description" content="{{ desc }}">
+  <link rel="canonical" href="{{ page_url }}">
+  <meta property="og:type" content="music.song">
+  <meta property="og:title" content="{{ track.title }} — Zimbermanne">
+  <meta property="og:description" content="{{ desc }}">
+  <meta property="og:url" content="{{ page_url }}">
+  <meta property="og:site_name" content="Zimbermanne">
+  <meta property="og:image" content="{{ album.cover }}">
+  <meta property="music:musician" content="{{ site_url }}/">
+  <meta property="music:album" content="{{ site_url }}/#{{ album.id }}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="{{ track.title }} — Zimbermanne">
+  <meta name="twitter:description" content="{{ desc }}">
+  <meta name="twitter:image" content="{{ album.cover }}">
+  <link rel="preconnect" href="https://cdn2.suno.ai">
+  <script type="application/ld+json">{{ song_ld|safe }}</script>
+{% endblock %}
+{% block content %}
+<main class="song">
+  <div class="song-cover">
+    <img src="{{ album.cover }}" alt="{{ album.title }} cover" width="600" height="600" decoding="async" fetchpriority="high">
+  </div>
+  <div class="song-body">
+    <div class="tag">{{ album.number }} · {{ album.title }}</div>
+    <h1>{{ track.title }}</h1>
+    {% if track.subtitle %}<div class="album-tagline">{{ track.subtitle }}</div>{% endif %}
+    <div class="song-meta">Zimbermanne · {{ album.tagline }}{% if track.duration %} · {{ track.duration }}{% endif %}</div>
+
+    {% if track.audioUrl %}<audio class="song-audio" controls preload="none" src="{{ track.audioUrl }}"></audio>{% endif %}
+
+    <div class="song-actions">
+      <a class="btn" href="{{ track.url }}" target="_blank" rel="noopener">Stream on Suno ↗</a>
+      <button class="btn btn-secondary" type="button" id="shareBtn" data-url="{{ page_url }}" data-title="{{ track.title }} — Zimbermanne">Share</button>
+    </div>
+
+    {% if track.lyrics %}
+      <h2 class="lyrics-heading"><small>Lyrics</small></h2>
+      <div class="song-lyrics">{{ track.lyrics }}</div>
+    {% endif %}
+
+    <nav class="song-nav" aria-label="More songs">
+      {% if song.prev %}<a href="/song/{{ song.prev.track.slug }}">← {{ song.prev.track.title }}</a>{% else %}<span></span>{% endif %}
+      {% if song.next %}<a href="/song/{{ song.next.track.slug }}">{{ song.next.track.title }} →</a>{% endif %}
+    </nav>
+  </div>
+</main>
+<script>
+  (function () {
+    var btn = document.getElementById('shareBtn');
+    btn.addEventListener('click', function () {
+      var data = { title: btn.dataset.title, url: btn.dataset.url };
+      if (navigator.share) { navigator.share(data).catch(function () {}); return; }
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(data.url).then(function () {
+          btn.textContent = 'Link copied ✓';
+          setTimeout(function () { btn.textContent = 'Share'; }, 2000);
+        });
+      }
+    });
+  })();
+</script>
+{% endblock %}

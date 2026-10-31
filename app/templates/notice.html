@@ -1,0 +1,15 @@
+{% extends "layout.html" %}
+{% block title %}{{ title }} — Zimbermanne{% endblock %}
+{% block head %}<meta name="robots" content="noindex">{% endblock %}
+{% block content %}
+<section class="notice">
+  <h2>{{ title }}</h2>
+  <p>{{ text }}</p>
+  {% if unsubscribe_token %}
+    <form method="POST" action="/unsubscribe/{{ unsubscribe_token }}">
+      <button type="submit" class="btn">Yes, unsubscribe me</button>
+    </form>
+  {% endif %}
+  {% if back_to_home %}<p><a class="btn btn-secondary" href="/">Back to the music</a></p>{% endif %}
+</section>
+{% endblock %}

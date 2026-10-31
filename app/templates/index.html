@@ -18,14 +18,14 @@
   <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
   <meta name="googlebot" content="index, follow">
   <meta name="bingbot" content="index, follow">
-  <link rel="canonical" href="https://zimbermanne.com/">
+  <link rel="canonical" href="{{ site_url }}/">
 
   <!-- OPEN GRAPH / SOCIAL MEDIA PREVIEW CRAWLERS -->
   <meta property="og:locale" content="en_US">
   <meta property="og:type" content="music.musician">
   <meta property="og:title" content="Zimbermanne — Official Afro Soul Pop Artist Website">
   <meta property="og:description" content="Music that moves between the warmth of a city night and the cold drama of a winter story. Explore albums, stream songs, and view lyrics.">
-  <meta property="og:url" content="https://zimbermanne.com/">
+  <meta property="og:url" content="{{ site_url }}/">
   <meta property="og:site_name" content="Zimbermanne">
   <meta property="og:image" content="https://cdn2.suno.ai/image_df5c9e26-e996-44ae-b9b0-8fcf468533e8.jpeg">
 
@@ -43,11 +43,11 @@
     "@graph": [
       {
         "@type": "MusicGroup",
-        "@id": "https://zimbermanne.com/#artist",
+        "@id": "{{ site_url }}/#artist",
         "name": "Zimbermanne",
         "genre": ["Afro Soul Pop", "Trip-Hop", "Cinematic Afrobeat"],
         "description": "Zimbermanne is a music artist making Afro Soul Pop: smooth, melodic records built on groove, emotion and storytelling.",
-        "url": "https://zimbermanne.com/",
+        "url": "{{ site_url }}/",
         "image": "https://cdn2.suno.ai/image_df5c9e26-e996-44ae-b9b0-8fcf468533e8.jpeg",
         "sameAs": [
           "https://suno.com/@zimbermannelit",
@@ -62,11 +62,14 @@
     ]
   }
   </script>
+  <script type="application/ld+json">{{ albums_ld|safe }}</script>
 
+  <link rel="preconnect" href="https://cdn2.suno.ai">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,400&family=Pinyon+Script&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/style.css?v={{ asset_v }}">
+  {% include "_analytics.html" %}
 </head>
 <body>
 
@@ -77,6 +80,7 @@
       <a href="#about">About</a>
       <a href="#story">Story</a>
       <a href="#albums">Albums</a>
+      <a href="#subscribe">Fan list</a>
       <a href="#contact">Contact</a>
       <span class="visitor-badge" id="visitorBadge">👁️ <span class="view-num" id="visitorNumber">{{ views }}</span> Views</span>
       <span class="sync-badge" id="syncStatus"><span class="sync-dot"></span> Auto-Synced</span>
@@ -132,7 +136,7 @@
       {% for album in albums %}
         <article class="album {{ 'rev' if loop.index0 % 2 == 1 else '' }}" id="{{ album.id }}">
           <div class="cover">
-            <img src="{{ album.cover }}" alt="{{ album.title }} cover" loading="lazy" width="600" height="600">
+            <img src="{{ album.cover }}" alt="{{ album.title }} cover" {% if loop.first %}fetchpriority="high"{% else %}loading="lazy"{% endif %} decoding="async" width="600" height="600">
           </div>
           <div>
             <div class="tag">{{ album.number }}</div>
@@ -147,7 +151,7 @@
               {% for track in album.tracks %}
                 <li>
                   <div class="track-info">
-                    <span class="track-title">{{ track.title }}</span>
+                    <a class="track-title" href="/song/{{ track.slug }}">{{ track.title }}</a>
                     {% if track.subtitle %}<span class="track-subtitle">{{ track.subtitle }}</span>{% endif %}
                   </div>
                   <div class="track-actions">
@@ -169,12 +173,26 @@
     </div>
   </section>
 
+  <!-- FAN LIST -->
+  <section class="subscribe" id="subscribe">
+    <h2><small>Stay close</small>New songs, first</h2>
+    <p>Leave your email and get a short note when a new song or album is out. No spam, and you can leave anytime.</p>
+    {% if form_status and form_section == 'subscribe' %}
+      <div class="form-status {{ form_status.type }}" role="status">{{ form_status.msg }}</div>
+    {% endif %}
+    <form method="POST" action="/subscribe" class="subscribe-form">
+      <input type="email" name="email" placeholder="Your email address" required maxlength="254" aria-label="Email address">
+      <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;height:0;width:0;opacity:0">
+      <button type="submit" class="btn">Notify me</button>
+    </form>
+  </section>
+
   <!-- CONTACT & BOOKING FORM -->
   <section class="contact" id="contact">
     <h2><small>Get in touch</small>Bookings &amp; Inquiries</h2>
     <p>Listen, follow and stay close to the music. For shows, collaborations and press, reach out.</p>
 
-    {% if form_status %}
+    {% if form_status and form_section == 'contact' %}
       <div class="form-status {{ form_status.type }}" role="status">{{ form_status.msg }}</div>
     {% endif %}
 
@@ -185,6 +203,9 @@
       <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;height:0;width:0;opacity:0">
       <button type="submit" class="btn">Send Booking Inquiry</button>
     </form>
+    {% if whatsapp_url %}
+      <p class="whatsapp-wrap"><a class="btn btn-whatsapp" href="{{ whatsapp_url }}" target="_blank" rel="noopener">Book on WhatsApp</a></p>
+    {% endif %}
 
     <div class="social">
       <a href="https://open.spotify.com/search/zimbermanne" target="_blank" rel="noopener">Spotify<span>@zimbermanne</span></a>

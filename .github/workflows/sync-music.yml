@@ -1,0 +1,36 @@
+name: Sync music from Suno
+
+on:
+  schedule:
+    - cron: "0 6 * * *"   # every day at 06:00 UTC
+  workflow_dispatch: {}    # also runnable by hand from the Actions tab
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync-music
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install httpx
+      - name: Sync from Suno
+        run: python sync_suno.py
+      - name: Commit music.json only if it changed
+        run: |
+          if git diff --quiet -- music.json; then
+            echo "music.json unchanged, nothing to commit"
+          else
+            git config user.name "music-sync[bot]"
+            git config user.email "music-sync@users.noreply.github.com"
+            git add music.json
+            git commit -m "Sync music.json from Suno"
+            git push
+          fi

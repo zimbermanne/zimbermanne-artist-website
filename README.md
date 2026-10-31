@@ -17,15 +17,47 @@ Open http://127.0.0.1:8000. Local data goes to `data/site.db`.
 | `DATABASE_URL` | Add it as a reference to the Postgres service. Without it the app uses a local SQLite file, which Railway wipes on every deploy. |
 | `RESEND_API_KEY` | Optional. When set, booking inquiries are also emailed through Resend. |
 | `CONTACT_TO` | Optional. Where inquiries go (default `hello@zimbermanne.com`). |
-| `CONTACT_FROM` | Optional. Sender address verified in Resend. |
+| `CONTACT_FROM` | Optional. Sender address verified in Resend (also used for the fan-list welcome email). |
+| `WHATSAPP_NUMBER` | Optional. Number with country code, e.g. `255700000000`. Shows a "Book on WhatsApp" button. |
+| `ADMIN_TOKEN` | Optional. Long random string. Enables the fan-list CSV export (see below). |
+| `SITE_URL` | Optional. Public address used in canonical links, sitemap and emails (default `https://zimbermanne.com`). |
+| `PLAUSIBLE_DOMAIN` | Optional. Your domain as registered in Plausible (e.g. `zimbermanne.com`). Turns analytics on. |
+| `VIEW_MULTIPLIER` | Optional. The visitor counter shows real count x this number (default 10, set 1 for exact). |
 
 Every inquiry is saved in the `messages` table first, so nothing is lost if email is not set up.
 
+## Fan list
+Visitors sign up under "Stay close". Addresses go in the `subscribers` table, each with a private
+unsubscribe link (`/unsubscribe/<token>`, asks for confirmation first). With Resend set up, new
+subscribers also get a welcome email containing that link. Export the list:
+
+```
+curl -H "Authorization: Bearer $ADMIN_TOKEN" https://zimbermanne.com/admin/subscribers.csv -o fans.csv
+```
+Add `?all=1` to include people who unsubscribed (never email them).
+
+## Song pages
+Every track in `music.json` gets `/song/<slug>` (slug from the title, duplicates get `-2`), with cover,
+lyrics, player, Suno link, share button and share preview tags. `/sitemap.xml` and `robots.txt` are
+generated, so a new song is in the sitemap as soon as it is in `music.json`.
+
 ## Update the music
-Edit `music.json` (or run `node sync-suno.js`) and push. The page reloads the file when it changes.
+Edit `music.json` by hand, or let the sync do it: `.github/workflows/sync-music.yml` runs
+`python sync_suno.py` every day and commits `music.json` only when a link changed. Run it yourself with
+`python sync_suno.py --dry-run`. If Suno's page changes and nothing can be read, the file is left alone
+and the run fails (visible in the GitHub Actions tab). New songs on Suno are listed in the log but must be
+added to `music.json` by hand, because the script cannot know which album they belong to.
+
+## Tests
+```
+pip install -r requirements-dev.txt
+pytest
+```
 
 ## Files
-- `app/main.py` routes, contact form, rate limit, email
-- `app/db.py` visitor counter and message storage
-- `app/templates/index.html`, `app/static/` page, styles, player script
+- `app/main.py` routes, contact form, fan list, sitemap, rate limit, email
+- `app/music.py` music.json loader, song slugs, schema.org markup
+- `app/db.py` visitor counter, messages and subscribers
+- `app/templates/` home page, song page, notices; `app/static/` styles and player script
+- `sync_suno.py` Suno sync, `.github/workflows/sync-music.yml` its schedule
 - `railway.json` start command and health check
