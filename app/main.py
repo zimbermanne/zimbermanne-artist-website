@@ -140,8 +140,8 @@ def send_welcome(email: str, token: str) -> None:
 async def index(request: Request, status: str | None = None):
     ua = request.headers.get("user-agent", "").lower()
     is_bot = any(w in ua for w in BOT_WORDS)
-    new_visitor = "zv" not in request.cookies and not is_bot
-    views = db.bump_views() if new_visitor else db.get_views()
+    # every page load counts, including refreshes; only search-engine and preview bots are skipped
+    views = db.get_views() if is_bot else db.bump_views()
 
     kind_msg = FORM_MESSAGES.get(status or "")
     form_status = {"type": kind_msg[0], "msg": kind_msg[1]} if kind_msg else None
@@ -155,8 +155,6 @@ async def index(request: Request, status: str | None = None):
                      whatsapp_url=whatsapp_url,
                      form_section="subscribe" if status in SUBSCRIBE_STATUSES else "contact", albums_ld=music.json_script(music.albums_ld(albums, SITE_URL))),
     )
-    if new_visitor:
-        response.set_cookie("zv", "1", max_age=86400, httponly=True, samesite="lax")
     return response
 
 
