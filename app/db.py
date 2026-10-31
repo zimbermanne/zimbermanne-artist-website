@@ -39,6 +39,14 @@ messages = Table(
     Column("emailed", Boolean, nullable=False, default=False),
 )
 
+catalog = Table(
+    "catalog", metadata,
+    Column("id", Integer, primary_key=True),          # single row, id = 1
+    Column("data", Text, nullable=False),             # the full albums/tracks JSON
+    Column("source_hash", String(64), nullable=False),  # sha256 of the music.json it was imported from
+    Column("updated_at", DateTime(timezone=True), nullable=False),
+)
+
 subscribers = Table(
     "subscribers", metadata,
     Column("id", Integer, primary_key=True, autoincrement=True),
@@ -49,8 +57,36 @@ subscribers = Table(
 )
 
 
+_tables_ready = False
+
+
+def _ensure_tables() -> None:
+    global _tables_ready
+    if not _tables_ready:
+        metadata.create_all(engine)
+        _tables_ready = True
+
+
+def get_catalog() -> tuple[str, str] | None:
+    """Return (music JSON text, source hash) stored in the database, or None when empty."""
+    _ensure_tables()
+    with engine.connect() as c:
+        row = c.execute(select(catalog.c.data, catalog.c.source_hash).where(catalog.c.id == 1)).first()
+    return (row.data, row.source_hash) if row else None
+
+
+def set_catalog(data: str, source_hash: str) -> None:
+    _ensure_tables()
+    now = datetime.now(timezone.utc)
+    with engine.begin() as c:
+        res = c.execute(catalog.update().where(catalog.c.id == 1)
+                        .values(data=data, source_hash=source_hash, updated_at=now))
+        if res.rowcount == 0:
+            c.execute(catalog.insert().values(id=1, data=data, source_hash=source_hash, updated_at=now))
+
+
 def init_db() -> None:
-    metadata.create_all(engine)
+    _ensure_tables()
     with engine.begin() as c:
         if c.execute(select(counters.c.name).where(counters.c.name == "views")).first() is None:
             c.execute(counters.insert().values(name="views", value=0))
