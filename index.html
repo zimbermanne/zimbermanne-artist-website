@@ -203,6 +203,20 @@
       gap: 6px;
     }
 
+    nav .visitor-badge {
+      font-size: 11px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: rgba(201, 160, 99, 0.18);
+      border: 1px solid var(--gold);
+      color: var(--gold-light);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-weight: 600;
+      box-shadow: 0 0 10px rgba(201, 160, 99, 0.15);
+    }
+
     nav .sync-dot {
       width: 6px;
       height: 6px;
@@ -865,6 +879,7 @@
       <a href="#story">Story</a>
       <a href="#albums">Albums</a>
       <a href="#contact">Contact</a>
+      <span class="visitor-badge" id="visitorBadge">👁️ <span id="visitorNumber">1,420</span> Views</span>
       <span class="sync-badge" id="syncStatus"><span class="sync-dot"></span> Live Sync</span>
     </div>
   </nav>
@@ -1198,7 +1213,7 @@
     <a class="btn" href="mailto:hello@zimbermanne.com">hello@zimbermanne.com</a>
   </section>
 
-  <footer>© 2026 Zimbermanne · Feel the soul</footer>
+  <footer>© 2026 Zimbermanne · Feel the soul · <span id="footerVisitorCount">1,420</span> Total Viewers</footer>
 
   <!-- FLOATING MUSIC PLAYER BAR -->
   <div class="player-bar" id="playerBar">
@@ -1373,10 +1388,55 @@
       });
     }
 
-    // Run auto-sync on load
+    // VISITOR COUNTER WITH X10 MULTIPLIER
+    async function initVisitorCounter() {
+      let count = 1420; // Default base (x10)
+      try {
+        const response = await fetch('/api/visitor-count');
+        if (response.ok) {
+          const data = await response.json();
+          count = data.displayCount;
+        } else {
+          let localActual = parseInt(localStorage.getItem('zm_actual_views') || '142', 10) + 1;
+          localStorage.setItem('zm_actual_views', localActual);
+          count = localActual * 10;
+        }
+      } catch (err) {
+        let localActual = parseInt(localStorage.getItem('zm_actual_views') || '142', 10) + 1;
+        localStorage.setItem('zm_actual_views', localActual);
+        count = localActual * 10;
+      }
+
+      animateCount('visitorNumber', count);
+      const footerCount = document.getElementById('footerVisitorCount');
+      if (footerCount) footerCount.innerText = count.toLocaleString();
+    }
+
+    function animateCount(elementId, targetNumber) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      let start = 0;
+      const duration = 1200;
+      const stepTime = 30;
+      const steps = duration / stepTime;
+      const increment = targetNumber / steps;
+
+      const timer = setInterval(() => {
+        start += increment;
+        if (start >= targetNumber) {
+          el.innerText = targetNumber.toLocaleString();
+          clearInterval(timer);
+        } else {
+          el.innerText = Math.floor(start).toLocaleString();
+        }
+      }, stepTime);
+    }
+
+    // Run auto-sync and visitor counter on load
     window.addEventListener('DOMContentLoaded', () => {
       simulateProgress();
       syncMusicData();
+      initVisitorCounter();
     });
   </script>
 </body>
