@@ -59,7 +59,7 @@
         navigator.clipboard.writeText(data.url).then(function () {
           btn.textContent = 'Link copied ✓';
           setTimeout(function () { btn.textContent = 'Share'; }, 2000);
-        });
+        }).catch(function () { window.prompt('Copy this link:', data.url); });
       }
     });
   })();

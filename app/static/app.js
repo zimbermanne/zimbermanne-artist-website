@@ -45,6 +45,8 @@
       const streamSrc = audioUrl || (songId ? `https://cdn1.suno.ai/${songId}.mp4` : null);
 
       if (streamSrc) {
+        document.getElementById('progressFill').style.width = '0%';
+        document.getElementById('currentTime').innerText = '0:00';
         audioPlayer.src = streamSrc;
         audioPlayer.play().then(() => {
           isPlaying = true;
@@ -80,6 +82,13 @@
       document.getElementById('progressFill').style.width = pct + '%';
       document.getElementById('currentTime').innerText = formatTime(audioPlayer.currentTime);
       document.getElementById('totalTime').innerText = formatTime(audioPlayer.duration);
+    });
+
+    // show the real length as soon as a song loads, and start the bar from zero
+    audioPlayer.addEventListener('loadedmetadata', () => {
+      document.getElementById('totalTime').innerText = formatTime(audioPlayer.duration);
+      document.getElementById('currentTime').innerText = '0:00';
+      document.getElementById('progressFill').style.width = '0%';
     });
 
     audioPlayer.addEventListener('ended', () => {

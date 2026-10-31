@@ -104,7 +104,7 @@
     .play-btn-large:hover { transform: scale(1.08); box-shadow: 0 0 15px var(--gold); }
     .progress-bar-wrap { flex: 1; display: flex; flex-direction: column; gap: 4px; }
     .progress-bar { width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; cursor: pointer; position: relative; overflow: hidden; }
-    .progress-fill { width: 35%; height: 100%; background: var(--gold); border-radius: 2px; transition: width 0.1s linear; }
+    .progress-fill { width: 0%; height: 100%; background: var(--gold); border-radius: 2px; transition: width 0.1s linear; }
     .time-display { display: flex; justify-content: space-between; font-size: 10px; color: var(--muted); }
     .player-right-actions { display: flex; align-items: center; gap: 12px; }
 
@@ -172,4 +172,17 @@ body.subpage { padding-bottom: 0; }
 @media (max-width: 768px) {
   .song { grid-template-columns: 1fr; }
   body.subpage nav .nav-links a:not(:last-child) { display: inline; }
+}
+
+/* mobile fixes: no sideways scrolling */
+@media (max-width: 768px) {
+  .about, .album { grid-template-columns: minmax(0, 1fr); }
+  nav { padding: 12px 4vw; gap: 8px; }
+  nav b { font-size: 16px; letter-spacing: .12em; }
+  nav .nav-links { gap: 10px; }
+  .sync-badge { display: none; }
+  .visitor-badge { padding: 4px 10px; font-size: 11px; }
+  .visitor-badge .view-num { font-size: 16px; }
+  body.subpage nav .nav-links { gap: 12px; }
+  body.subpage nav .nav-links a { font-size: 11px; letter-spacing: .08em; }
 }
