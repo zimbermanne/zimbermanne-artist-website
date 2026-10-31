@@ -156,11 +156,11 @@
                   </div>
                   <div class="track-actions">
                     <button class="btn-lyrics"
-                      data-title="{{ track.title }}" data-album="{{ album.title }}" data-cover="{{ album.cover }}"
+                      data-title="{{ track.title }}" data-album="{{ album.title }}" data-cover="{{ track.image or album.cover }}"
                       data-url="{{ track.url }}" data-lyrics="{{ track.lyrics or '' }}"
                       onclick="handleLyricsClick(this)">Lyrics</button>
                     <button class="btn-icon"
-                      data-title="{{ track.title }}" data-album="{{ album.title }}" data-cover="{{ album.cover }}"
+                      data-title="{{ track.title }}" data-album="{{ album.title }}" data-cover="{{ track.image or album.cover }}"
                       data-url="{{ track.url }}" data-lyrics="{{ track.lyrics or '' }}" data-audiourl="{{ track.audioUrl or '' }}"
                       onclick="handlePlayClick(this)">▶</button>
                   </div>

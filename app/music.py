@@ -87,7 +87,7 @@ def recording_ld(song: dict, site_url: str, full: bool = True) -> dict:
     if iso_duration(track.get("duration")):
         ld["duration"] = iso_duration(track["duration"])
     if full:
-        ld["image"] = album.get("cover")
+        ld["image"] = track.get("image") or album.get("cover")
         if track.get("audioUrl"):
             ld["audio"] = {"@type": "AudioObject", "contentUrl": track["audioUrl"], "encodingFormat": "audio/mp4"}
         if track.get("lyrics"):

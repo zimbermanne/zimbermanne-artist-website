@@ -54,3 +54,28 @@ def test_second_run_is_a_no_op():
 
 def test_empty_page_finds_nothing():
     assert s.parse_clips("<html>layout changed</html>") == {}
+
+
+IMG = "https://cdn2.suno.ai/image_large_" + A + ".jpeg"
+HTML_ART = (
+    f'{{\\"id\\":\\"{A}\\",\\"title\\":\\"Wife Best\\",\\"image_url\\":\\"https://cdn2.suno.ai/image_{A}.jpeg\\",'
+    f'\\"image_large_url\\":\\"{IMG}\\"}}'
+    f'{{\\"id\\":\\"{B}\\",\\"title\\":\\"Ukombozi wa Kifikra\\",\\"image_url\\":\\"https://evil.example.com/x.jpg\\"}}'
+)
+
+
+def test_artwork_prefers_large_and_rejects_foreign_hosts():
+    clips = s.parse_clips(HTML_ART)
+    assert clips[s.normalize("Wife Best")]["image"] == IMG
+    assert clips[s.normalize("Ukombozi wa Kifikra")]["image"] is None
+
+
+def test_artwork_synced_and_kept_when_missing():
+    data = {"albums": [{"tracks": [
+        {"title": "Wife Best", "url": "u"},
+        {"title": "Ukombozi wa Kifikra", "url": f"https://suno.com/song/{B}", "image": "https://cdn2.suno.ai/keep.jpeg"},
+    ]}]}
+    s.apply_clips(data, s.parse_clips(HTML_ART))
+    t = data["albums"][0]["tracks"]
+    assert t[0]["image"] == IMG
+    assert t[1]["image"] == "https://cdn2.suno.ai/keep.jpeg"

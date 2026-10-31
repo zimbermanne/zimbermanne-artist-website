@@ -1,4 +1,5 @@
 {% extends "layout.html" %}
+{% set cover = track.image or album.cover %}
 {% set page_url = site_url ~ '/song/' ~ track.slug %}
 {% set desc = 'Listen to ' ~ track.title ~ ' by Zimbermanne, from the album ' ~ album.title ~ '. Read the lyrics and stream on Suno.' %}
 {% block title %}{{ track.title }} — Zimbermanne | {{ album.title }}{% endblock %}
@@ -10,20 +11,20 @@
   <meta property="og:description" content="{{ desc }}">
   <meta property="og:url" content="{{ page_url }}">
   <meta property="og:site_name" content="Zimbermanne">
-  <meta property="og:image" content="{{ album.cover }}">
+  <meta property="og:image" content="{{ cover }}">
   <meta property="music:musician" content="{{ site_url }}/">
   <meta property="music:album" content="{{ site_url }}/#{{ album.id }}">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="{{ track.title }} — Zimbermanne">
   <meta name="twitter:description" content="{{ desc }}">
-  <meta name="twitter:image" content="{{ album.cover }}">
+  <meta name="twitter:image" content="{{ cover }}">
   <link rel="preconnect" href="https://cdn2.suno.ai">
   <script type="application/ld+json">{{ song_ld|safe }}</script>
 {% endblock %}
 {% block content %}
 <main class="song">
   <div class="song-cover">
-    <img src="{{ album.cover }}" alt="{{ album.title }} cover" width="600" height="600" decoding="async" fetchpriority="high">
+    <img src="{{ cover }}" alt="{{ album.title }} cover" width="600" height="600" decoding="async" fetchpriority="high">
   </div>
   <div class="song-body">
     <div class="tag">{{ album.number }} · {{ album.title }}</div>

@@ -45,7 +45,10 @@ generated, so a new song is in the sitemap as soon as it is in `music.json`.
 Edit `music.json` by hand, or let the sync do it: `.github/workflows/sync-music.yml` runs
 `python sync_suno.py` every day and commits `music.json` only when a link changed. Run it yourself with
 `python sync_suno.py --dry-run`. If Suno's page changes and nothing can be read, the file is left alone
-and the run fails (visible in the GitHub Actions tab). New songs on Suno are listed in the log but must be
+and the run fails (visible in the GitHub Actions tab).
+The sync updates each track's `url`, `audioUrl` and `image` (its Suno artwork, used on the song page,
+share preview and player bar). A track with no `image` falls back to its album cover. Album covers are
+not synced; change them by hand in `music.json`. New songs on Suno are listed in the log but must be
 added to `music.json` by hand, because the script cannot know which album they belong to.
 
 ## Tests
