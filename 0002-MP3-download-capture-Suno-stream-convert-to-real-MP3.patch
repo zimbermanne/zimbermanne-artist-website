@@ -1,0 +1,414 @@
+From c5cc5cfd1a9310382b1307a7e7c5a693ae8ec257 Mon Sep 17 00:00:00 2001
+From: Zimbermanne <noreply@zimbermanne.com>
+Date: Sat, 31 Oct 2026 15:19:32 +0000
+Subject: [PATCH 2/2] MP3 download: capture Suno stream, convert to real MP3
+ with ffmpeg, cache on disk
+
+---
+ README.md         |  23 +++++--
+ app/audio.py      | 158 ++++++++++++++++++++++++++++++++++++++++++++++
+ app/main.py       |  56 +++++-----------
+ requirements.txt  |   1 +
+ tests/test_app.py |  76 +++++++++++++++++-----
+ 5 files changed, 250 insertions(+), 64 deletions(-)
+ create mode 100644 app/audio.py
+
+diff --git a/README.md b/README.md
+index 8e86b25..d138b6c 100644
+--- a/README.md
++++ b/README.md
+@@ -52,13 +52,22 @@ not synced; change them by hand in `music.json`. New songs on Suno are listed in
+ added to `music.json` by hand, because the script cannot know which album they belong to.
+ 
+ ## MP3 download
+-Every track has an `MP3` link on the home page and a "Download MP3" button on its song page. They point to
+-`/download/<slug>.mp3`, which streams the song's MP3 from Suno's CDN (`cdn1.suno.ai/<song id>.mp3`, the id is taken
+-from the track's `url`) through the site, with the right filename. `app/static/download.js` reads that stream in
+-chunks while showing progress, and when the stream is complete builds one MP3 file and saves it. Without JavaScript
+-the link is a normal download. Only Suno's CDN is ever fetched, the route is rate limited, and `/download/` is
+-disallowed in `robots.txt`. If a download fails with "Failed, retry", Suno has no MP3 at that address for the song
+-(check the `/download/<slug>.mp3` response on Railway).
++Every track has an `MP3` link on the home page, a "Download MP3" button on its song page and in the player. They
++point to `/download/<slug>.mp3`. `app/audio.py` does the work for each song, once:
++1. **Capture:** streams the audio from Suno's CDN into a temporary file, chunk by chunk. It tries Suno's plain
++   `.mp3` first, then the stream the player uses (`audioUrl`).
++2. **Compile:** when the stream is complete, ffmpeg converts it to a real MP3 (title, artist and album tags added).
++   If Suno already sent an MP3 it is used as is. ffmpeg comes from the `imageio-ffmpeg` package in
++   `requirements.txt`, so Railway needs no extra setup (a system `ffmpeg` is used if there is one).
++3. **Cache:** the MP3 is kept in a cache folder, so later downloads are instant and many people asking at once
++   cause one conversion. `AUDIO_CACHE_DIR` (default: temp folder) and `AUDIO_CACHE_MAX_MB` (default 400) tune it.
++   Railway wipes the disk on each deploy, so songs are simply converted again on first request; attach a Railway
++   volume and point `AUDIO_CACHE_DIR` at it to keep them.
++
++`app/static/download.js` shows "Preparing..." during the first conversion (a few seconds), then live progress, and
++saves the finished file. Only Suno's CDN is fetched, the route is rate limited, and `/download/` is disallowed in
++`robots.txt`. If a download fails with "Failed, retry", look for `download failed for <slug>: <reason>` in the
++Railway logs.
+ 
+ ## Player on phones
+ Under 768px the player becomes a mini bar (cover, title, previous / play-pause / next, thin progress line).
+diff --git a/app/audio.py b/app/audio.py
+new file mode 100644
+index 0000000..9816946
+--- /dev/null
++++ b/app/audio.py
+@@ -0,0 +1,158 @@
++"""Capture a song's audio stream and turn it into a real MP3 (cached on disk).
++
++Flow for one song:
++  1. stream the audio from Suno's CDN into a temporary file (chunk by chunk)
++  2. when the stream is complete, convert it to MP3 with ffmpeg (skipped if Suno already sent an MP3)
++  3. keep the MP3 in a cache folder, so each song is converted only once
++"""
++import asyncio
++import os
++import re
++import shutil
++import tempfile
++import time
++from pathlib import Path
++
++import httpx
++
++CACHE_DIR = Path(os.environ.get("AUDIO_CACHE_DIR") or Path(tempfile.gettempdir()) / "zimbermanne-audio")
++CACHE_MAX_BYTES = int(os.environ.get("AUDIO_CACHE_MAX_MB", "400")) * 1024 * 1024
++MAX_SOURCE_BYTES = 80 * 1024 * 1024
++FFMPEG_TIMEOUT = 180
++ALLOWED_HOSTS = {"cdn1.suno.ai", "cdn2.suno.ai"}  # audio is only ever fetched from Suno's CDN
++SONG_ID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", re.I)
++
++_locks: dict[str, asyncio.Lock] = {}
++_convert_slots = asyncio.Semaphore(2)  # at most two ffmpeg runs at once
++
++
++class AudioError(Exception):
++    """The song's audio could not be fetched or converted."""
++
++
++def song_id(track: dict) -> str | None:
++    for key in ("url", "audioUrl"):
++        m = SONG_ID.search(track.get(key) or "")
++        if m:
++            return m.group(0).lower()
++    return None
++
++
++def sources(track: dict) -> list[str]:
++    """Where to try, best first: Suno's plain MP3 (no conversion needed), then the stream the player uses."""
++    sid = song_id(track)
++    urls = []
++    if sid:
++        urls.append(f"https://cdn1.suno.ai/{sid}.mp3")
++    if track.get("audioUrl"):
++        urls.append(track["audioUrl"])
++    elif sid:
++        urls.append(f"https://cdn1.suno.ai/{sid}.mp4")
++    return [u for u in dict.fromkeys(urls) if httpx.URL(u).host in ALLOWED_HOSTS]
++
++
++def ffmpeg_path() -> str | None:
++    found = shutil.which("ffmpeg")
++    if found:
++        return found
++    try:  # the pip package ships its own ffmpeg binary, so Railway needs no extra setup
++        import imageio_ffmpeg
++        return imageio_ffmpeg.get_ffmpeg_exe()
++    except Exception:
++        return None
++
++
++def http_client() -> httpx.AsyncClient:  # tests replace this
++    return httpx.AsyncClient(timeout=httpx.Timeout(15.0, read=60.0), follow_redirects=True)
++
++
++def cached_file(sid: str) -> Path:
++    return CACHE_DIR / f"{sid}.mp3"
++
++
++async def _capture(url: str, dest: Path) -> str:
++    """Stream the audio into dest, chunk by chunk. Returns the content type."""
++    async with http_client() as client:
++        async with client.stream("GET", url) as r:
++            if r.status_code != 200:
++                raise AudioError(f"source answered {r.status_code}")
++            ctype = r.headers.get("content-type", "").split(";")[0].strip().lower()
++            got = 0
++            with open(dest, "wb") as f:
++                async for chunk in r.aiter_bytes(65536):
++                    got += len(chunk)
++                    if got > MAX_SOURCE_BYTES:
++                        raise AudioError("source too large")
++                    f.write(chunk)
++    if got == 0:
++        raise AudioError("source was empty")
++    return ctype
++
++
++async def _convert(src: Path, dest: Path, tags: dict) -> None:
++    exe = ffmpeg_path()
++    if not exe:
++        raise AudioError("ffmpeg is not available")
++    cmd = [exe, "-y", "-loglevel", "error", "-i", str(src), "-vn", "-map_metadata", "-1",
++           "-codec:a", "libmp3lame", "-q:a", "2"]
++    for k, v in tags.items():
++        if v:
++            cmd += ["-metadata", f"{k}={v}"]
++    cmd += ["-f", "mp3", str(dest)]
++    async with _convert_slots:
++        proc = await asyncio.create_subprocess_exec(*cmd, stdout=asyncio.subprocess.DEVNULL, stderr=asyncio.subprocess.PIPE)
++        try:
++            _, err = await asyncio.wait_for(proc.communicate(), FFMPEG_TIMEOUT)
++        except asyncio.TimeoutError:
++            proc.kill()
++            await proc.wait()
++            raise AudioError("conversion timed out")
++    if proc.returncode != 0 or not dest.exists() or dest.stat().st_size == 0:
++        raise AudioError("conversion failed: " + err.decode("utf-8", "replace")[-200:])
++
++
++def _prune() -> None:
++    """Keep the cache under its size limit by deleting the least recently used files."""
++    files = sorted(CACHE_DIR.glob("*.mp3"), key=lambda p: p.stat().st_mtime)
++    total = sum(p.stat().st_size for p in files)
++    while files and total > CACHE_MAX_BYTES:
++        victim = files.pop(0)
++        total -= victim.stat().st_size
++        victim.unlink(missing_ok=True)
++
++
++async def ensure_mp3(track: dict, album_title: str = "") -> Path:
++    """Return the path of this song's MP3, capturing and converting it first if it is not cached yet."""
++    sid = song_id(track)
++    urls = sources(track)
++    if not sid or not urls:
++        raise AudioError("no audio source for this song")
++    final = cached_file(sid)
++    if final.exists():
++        final.touch()
++        return final
++    CACHE_DIR.mkdir(parents=True, exist_ok=True)
++    lock = _locks.setdefault(sid, asyncio.Lock())  # many people asking at once -> convert once
++    async with lock:
++        if final.exists():
++            return final
++        tags = {"title": track.get("title"), "artist": "Zimbermanne", "album": album_title}
++        last_error = "no source worked"
++        for url in urls:
++            src = CACHE_DIR / f"{sid}.{int(time.time() * 1000)}.src"
++            tmp = CACHE_DIR / f"{sid}.{int(time.time() * 1000)}.tmp"
++            try:
++                ctype = await _capture(url, src)          # 1. capture the stream
++                if ctype == "audio/mpeg" or url.endswith(".mp3"):
++                    os.replace(src, tmp)                  #    already an MP3, nothing to convert
++                else:
++                    await _convert(src, tmp, tags)        # 2. stream complete -> compile to MP3
++                os.replace(tmp, final)                    # 3. cache it
++                _prune()
++                return final
++            except (AudioError, httpx.HTTPError, OSError) as e:
++                last_error = str(e)
++            finally:
++                src.unlink(missing_ok=True)
++                tmp.unlink(missing_ok=True)
++        raise AudioError(last_error)
+diff --git a/app/main.py b/app/main.py
+index bf6778f..639f849 100644
+--- a/app/main.py
++++ b/app/main.py
+@@ -13,11 +13,11 @@ from xml.sax.saxutils import escape as xml_escape
+ import httpx
+ from fastapi import BackgroundTasks, FastAPI, Form, Request
+ from fastapi.middleware.gzip import GZipMiddleware
+-from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response, StreamingResponse
++from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response
+ from fastapi.staticfiles import StaticFiles
+ from fastapi.templating import Jinja2Templates
+ 
+-from . import db, music
++from . import audio, db, music
+ 
+ APP_DIR = Path(__file__).resolve().parent
+ EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+@@ -174,14 +174,6 @@ async def song_page(request: Request, slug: str):
+ 
+ # ---------- MP3 download ----------
+ 
+-SONG_ID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", re.I)
+-SUNO_MP3 = "https://cdn1.suno.ai/{}.mp3"  # the only place audio is ever fetched from
+-
+-
+-def _stream_client() -> httpx.AsyncClient:
+-    return httpx.AsyncClient(timeout=httpx.Timeout(15.0, read=60.0), follow_redirects=True)
+-
+-
+ def download_filename(track: dict) -> str:
+     name = track["title"] + (f" {track['subtitle']}" if track.get("subtitle") else "")
+     return re.sub(r"[^\w .()'&-]+", "", name).strip() + " - Zimbermanne.mp3"
+@@ -190,42 +182,24 @@ def download_filename(track: dict) -> str:
+ @app.get("/download/{slug}.mp3", include_in_schema=False)
+ async def download_song(request: Request, slug: str):
+     song = music.get_song(slug)
+-    track = song["track"] if song else None
+-    m = track and (SONG_ID.search(track.get("url") or "") or SONG_ID.search(track.get("audioUrl") or ""))
+-    if not m:
++    if not song or not audio.song_id(song["track"]):
+         return JSONResponse({"detail": "No audio for this song"}, status_code=404)
+     if rate_limited("dl:" + client_ip(request), limit=200, window=3600):
+         return JSONResponse({"detail": "Too many downloads, try again later"}, status_code=429)
+-
+-    client = _stream_client()
+     try:
+-        upstream = await client.send(client.build_request("GET", SUNO_MP3.format(m.group(0).lower())), stream=True)
+-    except httpx.HTTPError:
+-        await client.aclose()
+-        return JSONResponse({"detail": "Audio source unavailable"}, status_code=502)
+-    if upstream.status_code != 200:
+-        await upstream.aclose()
+-        await client.aclose()
++        path = await audio.ensure_mp3(song["track"], song["album"]["title"])
++    except audio.AudioError as e:
++        print(f"download failed for {slug}: {e}", flush=True)  # shows in the Railway logs
+         return JSONResponse({"detail": "Audio source unavailable"}, status_code=502)
+-
+-    filename = download_filename(track)
+-    headers = {
+-        "Content-Disposition": f"attachment; filename=\"{slug}.mp3\"; filename*=UTF-8''{quote(filename)}",
+-        "Cache-Control": "public, max-age=3600",
+-        "Content-Encoding": "identity",  # keeps gzip middleware off the mp3 so Content-Length (progress) survives
+-    }
+-    if upstream.headers.get("content-length"):
+-        headers["Content-Length"] = upstream.headers["content-length"]
+-
+-    async def body():
+-        try:
+-            async for chunk in upstream.aiter_raw(65536):
+-                yield chunk
+-        finally:
+-            await upstream.aclose()
+-            await client.aclose()
+-
+-    return StreamingResponse(body(), media_type="audio/mpeg", headers=headers)
++    filename = download_filename(song["track"])
++    return FileResponse(
++        path, media_type="audio/mpeg",
++        headers={
++            "Content-Disposition": f"attachment; filename=\"{slug}.mp3\"; filename*=UTF-8''{quote(filename)}",
++            "Cache-Control": "public, max-age=3600",
++            "Content-Encoding": "identity",  # keeps gzip off the mp3 so Content-Length (progress) survives
++        },
++    )
+ 
+ 
+ # ---------- contact + fan list ----------
+diff --git a/requirements.txt b/requirements.txt
+index f451deb..e6d1e7b 100644
+--- a/requirements.txt
++++ b/requirements.txt
+@@ -5,3 +5,4 @@ python-multipart>=0.0.9
+ sqlalchemy>=2.0
+ psycopg[binary]>=3.2
+ httpx>=0.27
++imageio-ffmpeg>=0.5
+diff --git a/tests/test_app.py b/tests/test_app.py
+index 568872d..3fb15cf 100644
+--- a/tests/test_app.py
++++ b/tests/test_app.py
+@@ -70,35 +70,79 @@ def test_bad_subscribe_email(client):
+     assert "badsub" in r.headers["location"]
+ 
+ 
+-def _fake_suno(monkeypatch, status=200, body=b"ID3" + b"\x00" * 5000):
+-    import httpx
++import asyncio
++import shutil
++import subprocess
+ 
+-    from app import main
++import httpx
+ 
+-    seen = []
++from app import audio
++
++
++@pytest.fixture()
++def suno(monkeypatch, tmp_path):
++    """Fake Suno CDN: .mp3 -> 404 unless set, .mp4 -> an AAC-in-MP4 stream. Counts every request."""
++    monkeypatch.setattr(audio, "CACHE_DIR", tmp_path / "cache")
++    exe = audio.ffmpeg_path()
++    if not exe:
++        pytest.skip("ffmpeg not available")
++    mp4 = tmp_path / "tone.mp4"
++    subprocess.run([exe, "-y", "-loglevel", "error", "-f", "lavfi", "-i", "sine=frequency=440:duration=2",
++                    "-c:a", "aac", str(mp4)], check=True)
++    state = {"mp3": None, "mp4": mp4.read_bytes(), "hits": []}
+ 
+     def handler(request):
+-        seen.append(str(request.url))
+-        return httpx.Response(status, stream=httpx.ByteStream(body), headers={"content-type": "audio/mpeg", "content-length": str(len(body))})
++        url = str(request.url)
++        state["hits"].append(url)
++        body, ctype = (state["mp3"], "audio/mpeg") if url.endswith(".mp3") else (state["mp4"], "video/mp4")
++        if body is None:
++            return httpx.Response(404)
++        return httpx.Response(200, stream=httpx.ByteStream(body), headers={"content-type": ctype})
+ 
+-    monkeypatch.setattr(main, "_stream_client", lambda: httpx.AsyncClient(transport=httpx.MockTransport(handler)))
+-    return seen, body
++    monkeypatch.setattr(audio, "http_client", lambda: httpx.AsyncClient(transport=httpx.MockTransport(handler)))
++    return state
+ 
+ 
+-def test_download_streams_mp3_with_length_and_filename(client, monkeypatch):
+-    seen, body = _fake_suno(monkeypatch)
++def test_download_captures_stream_and_converts_to_real_mp3(client, suno):
+     slug = music.all_slugs()[0]
+     r = client.get(f"/download/{slug}.mp3")  # default Accept-Encoding: gzip must not touch it
+-    assert r.status_code == 200 and r.content == body
+-    assert r.headers["content-type"] == "audio/mpeg" and r.headers["content-length"] == str(len(body))
++    assert r.status_code == 200 and r.headers["content-type"] == "audio/mpeg"
++    assert r.content[:3] == b"ID3" and b"Zimbermanne" in r.content[:600]  # a real MP3 with tags
++    assert r.headers["content-length"] == str(len(r.content))
+     assert "attachment" in r.headers["content-disposition"] and "Zimbermanne.mp3" in r.headers["content-disposition"]
+-    assert seen[0].startswith("https://cdn1.suno.ai/") and seen[0].endswith(".mp3")
++    assert any(u.endswith(".mp3") for u in suno["hits"]) and any(u.endswith(".mp4") for u in suno["hits"])
++
++
++def test_second_download_comes_from_cache(client, suno):
++    slug = music.all_slugs()[1]
++    assert client.get(f"/download/{slug}.mp3").status_code == 200
++    n = len(suno["hits"])
++    assert client.get(f"/download/{slug}.mp3").status_code == 200
++    assert len(suno["hits"]) == n  # nothing fetched again
++
++
++def test_plain_mp3_from_suno_is_passed_through(client, suno):
++    suno["mp3"] = b"ID3\x03\x00\x00\x00\x00\x00\x00" + b"\xff\xfb" * 500
++    r = client.get(f"/download/{music.all_slugs()[2]}.mp3")
++    assert r.status_code == 200 and r.content == suno["mp3"]
++    assert not any(u.endswith(".mp4") for u in suno["hits"])  # no conversion needed
++
++
++def test_simultaneous_requests_convert_once(suno):
++    track = music.get_song(music.all_slugs()[3])["track"]
++
++    async def both():
++        return await asyncio.gather(audio.ensure_mp3(track, "A"), audio.ensure_mp3(track, "A"))
++
++    p1, p2 = asyncio.run(both())
++    assert p1 == p2 and len([u for u in suno["hits"] if u.endswith(".mp4")]) == 1
+ 
+ 
+-def test_download_handles_missing_and_upstream_errors(client, monkeypatch):
++def test_download_handles_missing_song_and_dead_source(client, suno):
+     assert client.get("/download/does-not-exist.mp3").status_code == 404
+-    _fake_suno(monkeypatch, status=404)
+-    assert client.get(f"/download/{music.all_slugs()[0]}.mp3").status_code == 502
++    suno["mp4"] = None
++    suno["hits"].clear()
++    assert client.get(f"/download/{music.all_slugs()[4]}.mp3").status_code == 502
+ 
+ 
+ def test_download_links_and_robots(client):
+-- 
+2.43.0
+

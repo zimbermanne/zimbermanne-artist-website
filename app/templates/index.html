@@ -165,7 +165,7 @@
                     <button class="btn-icon"
                       data-title="{{ track.title }}" data-album="{{ album.title }}" data-cover="{{ track.image or album.cover }}"
                       data-url="{{ track.url }}" data-lyrics="{{ track.lyrics or '' }}" data-audiourl="{{ track.audioUrl or '' }}"
-                      onclick="handlePlayClick(this)">▶</button>
+                      aria-label="Play {{ track.title }}" onclick="handlePlayClick(this)">▶</button>
                   </div>
                 </li>
               {% endfor %}
@@ -223,20 +223,26 @@
 
   <footer>© 2026 Zimbermanne · Feel the soul · <span class="footer-views"><span class="footer-num" id="footerVisitorCount">{{ views }}</span> Total Views</span></footer>
 
-  <!-- FLOATING MUSIC PLAYER BAR -->
-  <div class="player-bar" id="playerBar">
-    <div class="player-now-playing">
-      <img id="playerCover" class="player-cover" src="https://cdn2.suno.ai/image_df5c9e26-e996-44ae-b9b0-8fcf468533e8.jpeg" alt="Now Playing">
-      <div class="player-details">
-        <div id="playerTrackTitle" class="player-track-name">Pesa inaongea sana</div>
-        <div id="playerAlbumTitle" class="player-album-name">Mimi Ni Odogwu</div>
-      </div>
-    </div>
+  <!-- FLOATING MUSIC PLAYER BAR (mini bar on phones, tap it to open the full player) -->
+  <div class="player-bar" id="playerBar" role="region" aria-label="Music player">
+    <div class="mini-progress" id="miniProgress" aria-hidden="true"><div class="mini-fill" id="miniFill"></div></div>
+    <button class="sheet-close" id="playerCollapse" type="button" aria-label="Close full player"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg></button>
+    <button class="player-now-playing" id="playerExpand" type="button" aria-expanded="false" aria-label="Open full player">
+      <img id="playerCover" class="player-cover" src="https://cdn2.suno.ai/image_df5c9e26-e996-44ae-b9b0-8fcf468533e8.jpeg" alt="">
+      <span class="player-details">
+        <span id="playerTrackTitle" class="player-track-name">Pesa inaongea sana</span>
+        <span id="playerAlbumTitle" class="player-album-name">Mimi Ni Odogwu</span>
+      </span>
+    </button>
 
     <div class="player-controls">
-      <button class="play-btn-large" id="playBtn" onclick="togglePlay()">▶</button>
+      <div class="transport">
+        <button class="skip-btn" id="prevBtn" type="button" aria-label="Previous song"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" ><path fill="currentColor" d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
+        <button class="play-btn-large" id="playBtn" type="button" aria-label="Play" onclick="togglePlay()"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" class="ico-play"><path fill="currentColor" d="M8 5v14l11-7z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" class="ico-pause"><path fill="currentColor" d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg></button>
+        <button class="skip-btn" id="nextBtn" type="button" aria-label="Next song"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" ><path fill="currentColor" d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg></button>
+      </div>
       <div class="progress-bar-wrap">
-        <div class="progress-bar" onclick="seekProgress(event)">
+        <div class="progress-bar" id="progressBar" role="slider" tabindex="0" aria-label="Seek" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
           <div class="progress-fill" id="progressFill"></div>
         </div>
         <div class="time-display">
@@ -247,8 +253,9 @@
     </div>
 
     <div class="player-right-actions">
-      <button class="btn-lyrics" id="playerLyricsBtn" onclick="openCurrentLyrics()">View Lyrics</button>
-      <a id="playerSunoLink" class="btn btn-secondary" style="padding: 8px 14px; font-size: 11px;" href="https://suno.com/song/82bcd874-4c22-45b1-a2e3-a40a27a73d82" target="_blank" rel="noopener">Stream on Suno ↗</a>
+      <button class="btn-lyrics" id="playerLyricsBtn" type="button" onclick="openCurrentLyrics()">Lyrics</button>
+      <a class="btn-lyrics" id="playerDownload" href="#" download data-dl data-filename="" hidden>MP3</a>
+      <a id="playerSunoLink" class="btn btn-secondary" href="https://suno.com/song/82bcd874-4c22-45b1-a2e3-a40a27a73d82" target="_blank" rel="noopener">Stream on Suno ↗</a>
     </div>
   </div>
 

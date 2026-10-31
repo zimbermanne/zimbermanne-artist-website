@@ -52,13 +52,30 @@ not synced; change them by hand in `music.json`. New songs on Suno are listed in
 added to `music.json` by hand, because the script cannot know which album they belong to.
 
 ## MP3 download
-Every track has an `MP3` link on the home page and a "Download MP3" button on its song page. They point to
-`/download/<slug>.mp3`, which streams the song's MP3 from Suno's CDN (`cdn1.suno.ai/<song id>.mp3`, the id is taken
-from the track's `url`) through the site, with the right filename. `app/static/download.js` reads that stream in
-chunks while showing progress, and when the stream is complete builds one MP3 file and saves it. Without JavaScript
-the link is a normal download. Only Suno's CDN is ever fetched, the route is rate limited, and `/download/` is
-disallowed in `robots.txt`. If a download fails with "Failed, retry", Suno has no MP3 at that address for the song
-(check the `/download/<slug>.mp3` response on Railway).
+Every track has an `MP3` link on the home page, a "Download MP3" button on its song page and in the player. They
+point to `/download/<slug>.mp3`. `app/audio.py` does the work for each song, once:
+1. **Capture:** streams the audio from Suno's CDN into a temporary file, chunk by chunk. It tries Suno's plain
+   `.mp3` first, then the stream the player uses (`audioUrl`).
+2. **Compile:** when the stream is complete, ffmpeg converts it to a real MP3 (title, artist and album tags added).
+   If Suno already sent an MP3 it is used as is. ffmpeg comes from the `imageio-ffmpeg` package in
+   `requirements.txt`, so Railway needs no extra setup (a system `ffmpeg` is used if there is one).
+3. **Cache:** the MP3 is kept in a cache folder, so later downloads are instant and many people asking at once
+   cause one conversion. `AUDIO_CACHE_DIR` (default: temp folder) and `AUDIO_CACHE_MAX_MB` (default 400) tune it.
+   Railway wipes the disk on each deploy, so songs are simply converted again on first request; attach a Railway
+   volume and point `AUDIO_CACHE_DIR` at it to keep them.
+
+`app/static/download.js` shows "Preparing..." during the first conversion (a few seconds), then live progress, and
+saves the finished file. Only Suno's CDN is fetched, the route is rate limited, and `/download/` is disallowed in
+`robots.txt`. If a download fails with "Failed, retry", look for `download failed for <slug>: <reason>` in the
+Railway logs.
+
+## Player on phones
+Under 768px the player becomes a mini bar (cover, title, previous / play-pause / next, thin progress line).
+Tap the bar to open the full-screen player: big cover, seek bar you can tap or drag, large controls, Lyrics,
+MP3 and Suno buttons. Close it with the arrow, or Escape. Songs play on to the next one in the list, and phones
+show lock-screen / headphone controls (Media Session API). Song rows stack the title above the buttons so titles
+are never cut off, and all buttons are at least 44px. The markup is in `index.html` (`#playerBar`), the styles at
+the end of `style.css`, the logic in `app/static/app.js`.
 
 ## Tests
 ```

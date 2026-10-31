@@ -13,11 +13,11 @@ from xml.sax.saxutils import escape as xml_escape
 import httpx
 from fastapi import BackgroundTasks, FastAPI, Form, Request
 from fastapi.middleware.gzip import GZipMiddleware
-from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response, StreamingResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, RedirectResponse, Response
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
-from . import db, music
+from . import audio, db, music
 
 APP_DIR = Path(__file__).resolve().parent
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -174,14 +174,6 @@ async def song_page(request: Request, slug: str):
 
 # ---------- MP3 download ----------
 
-SONG_ID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", re.I)
-SUNO_MP3 = "https://cdn1.suno.ai/{}.mp3"  # the only place audio is ever fetched from
-
-
-def _stream_client() -> httpx.AsyncClient:
-    return httpx.AsyncClient(timeout=httpx.Timeout(15.0, read=60.0), follow_redirects=True)
-
-
 def download_filename(track: dict) -> str:
     name = track["title"] + (f" {track['subtitle']}" if track.get("subtitle") else "")
     return re.sub(r"[^\w .()'&-]+", "", name).strip() + " - Zimbermanne.mp3"
@@ -190,42 +182,24 @@ def download_filename(track: dict) -> str:
 @app.get("/download/{slug}.mp3", include_in_schema=False)
 async def download_song(request: Request, slug: str):
     song = music.get_song(slug)
-    track = song["track"] if song else None
-    m = track and (SONG_ID.search(track.get("url") or "") or SONG_ID.search(track.get("audioUrl") or ""))
-    if not m:
+    if not song or not audio.song_id(song["track"]):
         return JSONResponse({"detail": "No audio for this song"}, status_code=404)
     if rate_limited("dl:" + client_ip(request), limit=200, window=3600):
         return JSONResponse({"detail": "Too many downloads, try again later"}, status_code=429)
-
-    client = _stream_client()
     try:
-        upstream = await client.send(client.build_request("GET", SUNO_MP3.format(m.group(0).lower())), stream=True)
-    except httpx.HTTPError:
-        await client.aclose()
+        path = await audio.ensure_mp3(song["track"], song["album"]["title"])
+    except audio.AudioError as e:
+        print(f"download failed for {slug}: {e}", flush=True)  # shows in the Railway logs
         return JSONResponse({"detail": "Audio source unavailable"}, status_code=502)
-    if upstream.status_code != 200:
-        await upstream.aclose()
-        await client.aclose()
-        return JSONResponse({"detail": "Audio source unavailable"}, status_code=502)
-
-    filename = download_filename(track)
-    headers = {
-        "Content-Disposition": f"attachment; filename=\"{slug}.mp3\"; filename*=UTF-8''{quote(filename)}",
-        "Cache-Control": "public, max-age=3600",
-        "Content-Encoding": "identity",  # keeps gzip middleware off the mp3 so Content-Length (progress) survives
-    }
-    if upstream.headers.get("content-length"):
-        headers["Content-Length"] = upstream.headers["content-length"]
-
-    async def body():
-        try:
-            async for chunk in upstream.aiter_raw(65536):
-                yield chunk
-        finally:
-            await upstream.aclose()
-            await client.aclose()
-
-    return StreamingResponse(body(), media_type="audio/mpeg", headers=headers)
+    filename = download_filename(song["track"])
+    return FileResponse(
+        path, media_type="audio/mpeg",
+        headers={
+            "Content-Disposition": f"attachment; filename=\"{slug}.mp3\"; filename*=UTF-8''{quote(filename)}",
+            "Cache-Control": "public, max-age=3600",
+            "Content-Encoding": "identity",  # keeps gzip off the mp3 so Content-Length (progress) survives
+        },
+    )
 
 
 # ---------- contact + fan list ----------

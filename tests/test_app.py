@@ -70,35 +70,79 @@ def test_bad_subscribe_email(client):
     assert "badsub" in r.headers["location"]
 
 
-def _fake_suno(monkeypatch, status=200, body=b"ID3" + b"\x00" * 5000):
-    import httpx
+import asyncio
+import shutil
+import subprocess
 
-    from app import main
+import httpx
 
-    seen = []
+from app import audio
+
+
+@pytest.fixture()
+def suno(monkeypatch, tmp_path):
+    """Fake Suno CDN: .mp3 -> 404 unless set, .mp4 -> an AAC-in-MP4 stream. Counts every request."""
+    monkeypatch.setattr(audio, "CACHE_DIR", tmp_path / "cache")
+    exe = audio.ffmpeg_path()
+    if not exe:
+        pytest.skip("ffmpeg not available")
+    mp4 = tmp_path / "tone.mp4"
+    subprocess.run([exe, "-y", "-loglevel", "error", "-f", "lavfi", "-i", "sine=frequency=440:duration=2",
+                    "-c:a", "aac", str(mp4)], check=True)
+    state = {"mp3": None, "mp4": mp4.read_bytes(), "hits": []}
 
     def handler(request):
-        seen.append(str(request.url))
-        return httpx.Response(status, stream=httpx.ByteStream(body), headers={"content-type": "audio/mpeg", "content-length": str(len(body))})
+        url = str(request.url)
+        state["hits"].append(url)
+        body, ctype = (state["mp3"], "audio/mpeg") if url.endswith(".mp3") else (state["mp4"], "video/mp4")
+        if body is None:
+            return httpx.Response(404)
+        return httpx.Response(200, stream=httpx.ByteStream(body), headers={"content-type": ctype})
 
-    monkeypatch.setattr(main, "_stream_client", lambda: httpx.AsyncClient(transport=httpx.MockTransport(handler)))
-    return seen, body
+    monkeypatch.setattr(audio, "http_client", lambda: httpx.AsyncClient(transport=httpx.MockTransport(handler)))
+    return state
 
 
-def test_download_streams_mp3_with_length_and_filename(client, monkeypatch):
-    seen, body = _fake_suno(monkeypatch)
+def test_download_captures_stream_and_converts_to_real_mp3(client, suno):
     slug = music.all_slugs()[0]
     r = client.get(f"/download/{slug}.mp3")  # default Accept-Encoding: gzip must not touch it
-    assert r.status_code == 200 and r.content == body
-    assert r.headers["content-type"] == "audio/mpeg" and r.headers["content-length"] == str(len(body))
+    assert r.status_code == 200 and r.headers["content-type"] == "audio/mpeg"
+    assert r.content[:3] == b"ID3" and b"Zimbermanne" in r.content[:600]  # a real MP3 with tags
+    assert r.headers["content-length"] == str(len(r.content))
     assert "attachment" in r.headers["content-disposition"] and "Zimbermanne.mp3" in r.headers["content-disposition"]
-    assert seen[0].startswith("https://cdn1.suno.ai/") and seen[0].endswith(".mp3")
+    assert any(u.endswith(".mp3") for u in suno["hits"]) and any(u.endswith(".mp4") for u in suno["hits"])
 
 
-def test_download_handles_missing_and_upstream_errors(client, monkeypatch):
+def test_second_download_comes_from_cache(client, suno):
+    slug = music.all_slugs()[1]
+    assert client.get(f"/download/{slug}.mp3").status_code == 200
+    n = len(suno["hits"])
+    assert client.get(f"/download/{slug}.mp3").status_code == 200
+    assert len(suno["hits"]) == n  # nothing fetched again
+
+
+def test_plain_mp3_from_suno_is_passed_through(client, suno):
+    suno["mp3"] = b"ID3\x03\x00\x00\x00\x00\x00\x00" + b"\xff\xfb" * 500
+    r = client.get(f"/download/{music.all_slugs()[2]}.mp3")
+    assert r.status_code == 200 and r.content == suno["mp3"]
+    assert not any(u.endswith(".mp4") for u in suno["hits"])  # no conversion needed
+
+
+def test_simultaneous_requests_convert_once(suno):
+    track = music.get_song(music.all_slugs()[3])["track"]
+
+    async def both():
+        return await asyncio.gather(audio.ensure_mp3(track, "A"), audio.ensure_mp3(track, "A"))
+
+    p1, p2 = asyncio.run(both())
+    assert p1 == p2 and len([u for u in suno["hits"] if u.endswith(".mp4")]) == 1
+
+
+def test_download_handles_missing_song_and_dead_source(client, suno):
     assert client.get("/download/does-not-exist.mp3").status_code == 404
-    _fake_suno(monkeypatch, status=404)
-    assert client.get(f"/download/{music.all_slugs()[0]}.mp3").status_code == 502
+    suno["mp4"] = None
+    suno["hits"].clear()
+    assert client.get(f"/download/{music.all_slugs()[4]}.mp3").status_code == 502
 
 
 def test_download_links_and_robots(client):
@@ -106,3 +150,12 @@ def test_download_links_and_robots(client):
     assert f'href="/download/{slug}.mp3"' in client.get("/").text
     assert "Download MP3" in client.get(f"/song/{slug}").text
     assert "Disallow: /download/" in client.get("/robots.txt").text
+
+
+def test_player_has_phone_controls(client):
+    html = client.get("/").text
+    for needle in ('id="playerExpand"', 'id="prevBtn"', 'id="nextBtn"', 'id="miniProgress"', 'id="playerCollapse"', 'role="slider"'):
+        assert needle in html
+    assert "viewport-fit=cover" in html
+    css = client.get("/static/style.css").text
+    assert ".player-bar.expanded" in css and "env(safe-area-inset-bottom)" in css

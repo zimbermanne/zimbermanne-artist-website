@@ -1,0 +1,553 @@
+From 23f47d91863cd0726549b1874a48c78b134f7cf3 Mon Sep 17 00:00:00 2001
+From: Zimbermanne <noreply@zimbermanne.com>
+Date: Sat, 31 Oct 2026 15:09:58 +0000
+Subject: [PATCH 1/2] Mobile player: mini bar + full-screen player, prev/next,
+ drag seek, lock-screen controls; readable song rows and hero on phones
+
+---
+ README.md                |   8 ++
+ app/static/app.js        | 286 +++++++++++++++++++++++++++++----------
+ app/static/style.css     |  77 ++++++++++-
+ app/templates/index.html |  35 +++--
+ tests/test_app.py        |   9 ++
+ 5 files changed, 325 insertions(+), 90 deletions(-)
+
+diff --git a/README.md b/README.md
+index c973be6..8e86b25 100644
+--- a/README.md
++++ b/README.md
+@@ -60,6 +60,14 @@ the link is a normal download. Only Suno's CDN is ever fetched, the route is rat
+ disallowed in `robots.txt`. If a download fails with "Failed, retry", Suno has no MP3 at that address for the song
+ (check the `/download/<slug>.mp3` response on Railway).
+ 
++## Player on phones
++Under 768px the player becomes a mini bar (cover, title, previous / play-pause / next, thin progress line).
++Tap the bar to open the full-screen player: big cover, seek bar you can tap or drag, large controls, Lyrics,
++MP3 and Suno buttons. Close it with the arrow, or Escape. Songs play on to the next one in the list, and phones
++show lock-screen / headphone controls (Media Session API). Song rows stack the title above the buttons so titles
++are never cut off, and all buttons are at least 44px. The markup is in `index.html` (`#playerBar`), the styles at
++the end of `style.css`, the logic in `app/static/app.js`.
++
+ ## Tests
+ ```
+ pip install -r requirements-dev.txt
+diff --git a/app/static/app.js b/app/static/app.js
+index 33022b5..c8ce471 100644
+--- a/app/static/app.js
++++ b/app/static/app.js
+@@ -1,6 +1,11 @@
+-    let isPlaying = false;
++    // ---------- player ----------
++    const $ = (id) => document.getElementById(id);
+     const audioPlayer = new Audio();
+     audioPlayer.crossOrigin = "anonymous";
++    audioPlayer.preload = "none";
++
++    const bar = $('playerBar');
++    const isMobile = () => window.matchMedia('(max-width: 768px)').matches;
+ 
+     let currentTrackData = {
+       title: 'Pesa inaongea sana',
+@@ -8,116 +13,235 @@
+       cover: 'https://cdn2.suno.ai/image_df5c9e26-e996-44ae-b9b0-8fcf468533e8.jpeg',
+       url: 'https://suno.com/song/82bcd874-4c22-45b1-a2e3-a40a27a73d82',
+       audioUrl: 'https://cdn1.suno.ai/82bcd874-4c22-45b1-a2e3-a40a27a73d82.mp4',
+-      lyrics: '[Verse 1]\nJana nilisema, \'mimi sina kitu\',\nLeo nauliza, \'Pesa iko wapi?\'\nPesa ikifanya kazi, kesho inakupa nafasi,\nJifunze, wekeza, anza hata kwa kiasi.\n\n[Bridge]\nNitaenda kijijini, nikakae na wazee,\nChini ya mti, swali moja moyoni:\n\'Mzee, nifanyeje? Kibati changu hakijai!\'\n\n[Chorus]\nPesa inaongea sana, Pesa ikiwa na mpango,\nKesho inakuwa sawa! Kibati cha kijiji kinahitaji kibati imara.'
++      lyrics: ''
+     };
++    let queue = [];       // every play button on the page, in order: next/previous walk this list
++    let queueIndex = -1;
++    let currentBtn = null;
+ 
+     function extractSongId(url) {
+       const match = (url || '').match(/[0-9a-f-]{36}/i);
+       return match ? match[0] : null;
+     }
+ 
+-    function handlePlayClick(btn) {
+-      const title = btn.getAttribute('data-title');
+-      const album = btn.getAttribute('data-album');
+-      const cover = btn.getAttribute('data-cover');
+-      const url = btn.getAttribute('data-url');
+-      const lyrics = btn.getAttribute('data-lyrics');
+-      const audioUrl = btn.getAttribute('data-audiourl');
+-      playTrack(title, album, cover, url, lyrics, audioUrl);
++    function buildQueue() {
++      queue = Array.from(document.querySelectorAll('.tracks .btn-icon'));
+     }
+ 
+-    function handleLyricsClick(btn) {
+-      const title = btn.getAttribute('data-title');
+-      const album = btn.getAttribute('data-album');
+-      const url = btn.getAttribute('data-url');
+-      const lyrics = btn.getAttribute('data-lyrics');
+-      showLyrics(title, album, lyrics, url);
++    function dataFromButton(btn) {
++      return {
++        title: btn.getAttribute('data-title'),
++        album: btn.getAttribute('data-album'),
++        cover: btn.getAttribute('data-cover'),
++        url: btn.getAttribute('data-url'),
++        lyrics: btn.getAttribute('data-lyrics'),
++        audioUrl: btn.getAttribute('data-audiourl')
++      };
+     }
+ 
+-    function playTrack(title, album, cover, url, lyrics, audioUrl) {
+-      currentTrackData = { title, album, cover, url, lyrics: lyrics || currentTrackData.lyrics, audioUrl };
+-      document.getElementById('playerTrackTitle').innerText = title;
+-      document.getElementById('playerAlbumTitle').innerText = album;
+-      document.getElementById('playerCover').src = cover;
+-      document.getElementById('playerSunoLink').href = url;
+-
+-      const songId = extractSongId(url);
+-      const streamSrc = audioUrl || (songId ? `https://cdn1.suno.ai/${songId}.mp4` : null);
+-
+-      if (streamSrc) {
+-        document.getElementById('progressFill').style.width = '0%';
+-        document.getElementById('currentTime').innerText = '0:00';
+-        audioPlayer.src = streamSrc;
+-        audioPlayer.play().then(() => {
+-          isPlaying = true;
+-          document.getElementById('playBtn').innerText = '❚❚';
+-        }).catch(err => {
+-          console.log('Audio autoplay blocked or error:', err);
+-          isPlaying = false;
+-          document.getElementById('playBtn').innerText = '▶';
+-        });
++    function setPlayingUI(on) {
++      bar.classList.toggle('is-playing', on);
++      const b = $('playBtn');
++      b.setAttribute('aria-label', on ? 'Pause' : 'Play');
++      document.querySelectorAll('.tracks li.now-playing').forEach((li) => li.classList.remove('now-playing'));
++      if (currentBtn) {
++        const li = currentBtn.closest('li');
++        if (li) li.classList.toggle('now-playing', true);
+       }
+     }
+ 
++    function setTrackUI(btn) {
++      const t = currentTrackData;
++      $('playerTrackTitle').innerText = t.title;
++      $('playerAlbumTitle').innerText = t.album;
++      $('playerCover').src = t.cover;
++      $('playerSunoLink').href = t.url;
++      // MP3 link: reuse the one in the same list row
++      const dl = $('playerDownload');
++      const rowLink = btn && btn.closest('li') ? btn.closest('li').querySelector('a[data-dl]') : null;
++      if (rowLink) {
++        dl.href = rowLink.getAttribute('href');
++        dl.setAttribute('data-filename', rowLink.getAttribute('data-filename') || 'track.mp3');
++        dl.hidden = false;
++      } else {
++        dl.hidden = true;
++      }
++      $('progressFill').style.width = '0%';
++      $('miniFill').style.width = '0%';
++      $('currentTime').innerText = '0:00';
++      $('totalTime').innerText = '0:00';
++      updateMediaSession();
++    }
++
++    function startStream() {
++      const t = currentTrackData;
++      const songId = extractSongId(t.url);
++      const streamSrc = t.audioUrl || (songId ? `https://cdn1.suno.ai/${songId}.mp4` : null);
++      if (!streamSrc) return;
++      audioPlayer.src = streamSrc;
++      audioPlayer.play().catch((err) => {
++        console.log('Audio autoplay blocked or error:', err);
++        setPlayingUI(false);
++      });
++    }
++
++    function handlePlayClick(btn) {
++      if (btn === currentBtn && audioPlayer.src) { togglePlay(); return; }
++      buildQueue();
++      queueIndex = queue.indexOf(btn);
++      currentBtn = btn;
++      currentTrackData = { ...currentTrackData, ...dataFromButton(btn), lyrics: btn.getAttribute('data-lyrics') || '' };
++      setTrackUI(btn);
++      startStream();
++    }
++
++    function skip(dir) {
++      if (!queue.length) buildQueue();
++      if (!queue.length) return;
++      if (queueIndex < 0) queueIndex = dir > 0 ? -1 : 0;
++      // previous: restart the song when it is already a few seconds in
++      if (dir < 0 && audioPlayer.currentTime > 3) { audioPlayer.currentTime = 0; return; }
++      const next = (queueIndex + dir + queue.length) % queue.length;
++      handlePlayClick(queue[next]);
++    }
++
+     function togglePlay() {
+       if (!audioPlayer.src) {
+-        playTrack(currentTrackData.title, currentTrackData.album, currentTrackData.cover, currentTrackData.url, currentTrackData.lyrics, currentTrackData.audioUrl);
++        // nothing loaded yet: play the first song of the list (or the default one)
++        buildQueue();
++        const first = queue.find((b) => b.getAttribute('data-url') === currentTrackData.url) || queue[0];
++        if (first) { handlePlayClick(first); } else { startStream(); }
+         return;
+       }
++      if (audioPlayer.paused) { audioPlayer.play().catch(() => {}); } else { audioPlayer.pause(); }
++    }
+ 
+-      if (audioPlayer.paused) {
+-        audioPlayer.play();
+-        isPlaying = true;
+-        document.getElementById('playBtn').innerText = '❚❚';
+-      } else {
+-        audioPlayer.pause();
+-        isPlaying = false;
+-        document.getElementById('playBtn').innerText = '▶';
+-      }
++    audioPlayer.addEventListener('play', () => setPlayingUI(true));
++    audioPlayer.addEventListener('pause', () => setPlayingUI(false));
++    audioPlayer.addEventListener('ended', () => {
++      setPlayingUI(false);
++      $('progressFill').style.width = '0%';
++      $('miniFill').style.width = '0%';
++      if (queue.length > 1) skip(1);   // keep the music going
++    });
++    audioPlayer.addEventListener('error', () => setPlayingUI(false));
++
++    function formatTime(seconds) {
++      if (!isFinite(seconds)) return '0:00';
++      const m = Math.floor(seconds / 60);
++      const s = Math.floor(seconds % 60);
++      return `${m}:${s < 10 ? '0' : ''}${s}`;
+     }
+ 
++    let lastPos = 0;
+     audioPlayer.addEventListener('timeupdate', () => {
+       if (!audioPlayer.duration) return;
+       const pct = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+-      document.getElementById('progressFill').style.width = pct + '%';
+-      document.getElementById('currentTime').innerText = formatTime(audioPlayer.currentTime);
+-      document.getElementById('totalTime').innerText = formatTime(audioPlayer.duration);
++      $('progressFill').style.width = pct + '%';
++      $('miniFill').style.width = pct + '%';
++      $('progressBar').setAttribute('aria-valuenow', Math.round(pct));
++      $('currentTime').innerText = formatTime(audioPlayer.currentTime);
++      $('totalTime').innerText = formatTime(audioPlayer.duration);
++      const now = Date.now();
++      if (now - lastPos > 1000) { lastPos = now; updatePosition(); }
+     });
+ 
+     // show the real length as soon as a song loads, and start the bar from zero
+     audioPlayer.addEventListener('loadedmetadata', () => {
+-      document.getElementById('totalTime').innerText = formatTime(audioPlayer.duration);
+-      document.getElementById('currentTime').innerText = '0:00';
+-      document.getElementById('progressFill').style.width = '0%';
++      $('totalTime').innerText = formatTime(audioPlayer.duration);
++      $('currentTime').innerText = '0:00';
++      $('progressFill').style.width = '0%';
++      $('miniFill').style.width = '0%';
++      updatePosition();
+     });
+ 
+-    audioPlayer.addEventListener('ended', () => {
+-      isPlaying = false;
+-      document.getElementById('playBtn').innerText = '▶';
+-      document.getElementById('progressFill').style.width = '0%';
++    // ---------- seeking: tap or drag on the bar (finger or mouse), arrow keys on the slider ----------
++    function seekFromEvent(e, el) {
++      if (!audioPlayer.duration) return;
++      const rect = el.getBoundingClientRect();
++      const pct = Math.min(1, Math.max(0, (e.clientX - rect.left) / rect.width));
++      audioPlayer.currentTime = pct * audioPlayer.duration;
++    }
++    function bindSeek(el) {
++      let dragging = false;
++      el.addEventListener('pointerdown', (e) => { dragging = true; el.setPointerCapture(e.pointerId); seekFromEvent(e, el); });
++      el.addEventListener('pointermove', (e) => { if (dragging) seekFromEvent(e, el); });
++      const stop = () => { dragging = false; };
++      el.addEventListener('pointerup', stop);
++      el.addEventListener('pointercancel', stop);
++    }
++    bindSeek($('progressBar'));
++    $('progressBar').addEventListener('keydown', (e) => {
++      if (e.key === 'ArrowRight') { audioPlayer.currentTime += 5; e.preventDefault(); }
++      if (e.key === 'ArrowLeft') { audioPlayer.currentTime -= 5; e.preventDefault(); }
+     });
++    // the thin line along the top of the phone mini bar is tappable too
++    $('miniProgress').style.pointerEvents = 'auto';
++    bindSeek($('miniProgress'));
++    function seekProgress(e) { seekFromEvent(e, e.currentTarget); } // kept for old inline handlers
+ 
+-    function formatTime(seconds) {
+-      if (isNaN(seconds)) return '0:00';
+-      const m = Math.floor(seconds / 60);
+-      const s = Math.floor(seconds % 60);
+-      return `${m}:${s < 10 ? '0' : ''}${s}`;
++    $('prevBtn').addEventListener('click', () => skip(-1));
++    $('nextBtn').addEventListener('click', () => skip(1));
++
++    // ---------- phone: tap the mini bar to open the full-screen player ----------
++    function setExpanded(on) {
++      if (on && !isMobile()) return;
++      bar.classList.toggle('expanded', on);
++      document.body.classList.toggle('player-open', on);
++      $('playerExpand').setAttribute('aria-expanded', String(on));
++      $('playerExpand').setAttribute('aria-label', on ? 'Full player' : 'Open full player');
++      if (on) $('playerCollapse').focus({ preventScroll: true });
+     }
++    $('playerExpand').addEventListener('click', () => { if (isMobile() && !bar.classList.contains('expanded')) setExpanded(true); });
++    $('playerCollapse').addEventListener('click', () => setExpanded(false));
++    window.addEventListener('resize', () => { if (!isMobile()) setExpanded(false); });
++    document.addEventListener('keydown', (e) => {
++      if (e.key !== 'Escape') return;
++      if ($('lyricsModal').classList.contains('active')) closeLyrics(); else setExpanded(false);
++    });
+ 
+-    function seekProgress(e) {
+-      if (!audioPlayer.duration) return;
+-      const bar = e.currentTarget;
+-      const rect = bar.getBoundingClientRect();
+-      const pct = (e.clientX - rect.left) / rect.width;
+-      audioPlayer.currentTime = pct * audioPlayer.duration;
++    // ---------- lock screen / headphone / notification controls ----------
++    function updateMediaSession() {
++      if (!('mediaSession' in navigator) || typeof MediaMetadata === 'undefined') return;
++      const t = currentTrackData;
++      navigator.mediaSession.metadata = new MediaMetadata({
++        title: t.title, artist: 'Zimbermanne', album: t.album,
++        artwork: [{ src: t.cover, sizes: '512x512' }]
++      });
++    }
++    function updatePosition() {
++      if (!('mediaSession' in navigator) || !navigator.mediaSession.setPositionState || !isFinite(audioPlayer.duration)) return;
++      try {
++        navigator.mediaSession.setPositionState({ duration: audioPlayer.duration, playbackRate: audioPlayer.playbackRate, position: audioPlayer.currentTime });
++      } catch (e) { /* some browsers reject odd values */ }
++    }
++    if ('mediaSession' in navigator) {
++      const ms = navigator.mediaSession;
++      const set = (a, fn) => { try { ms.setActionHandler(a, fn); } catch (e) {} };
++      set('play', () => audioPlayer.play());
++      set('pause', () => audioPlayer.pause());
++      set('previoustrack', () => skip(-1));
++      set('nexttrack', () => skip(1));
++      set('seekbackward', () => { audioPlayer.currentTime = Math.max(0, audioPlayer.currentTime - 10); });
++      set('seekforward', () => { audioPlayer.currentTime += 10; });
++      set('seekto', (d) => { if (d.seekTime != null) audioPlayer.currentTime = d.seekTime; });
++    }
++
++    // ---------- lyrics modal ----------
++    function handleLyricsClick(btn) {
++      const title = btn.getAttribute('data-title');
++      const album = btn.getAttribute('data-album');
++      const url = btn.getAttribute('data-url');
++      const lyrics = btn.getAttribute('data-lyrics');
++      showLyrics(title, album, lyrics, url);
+     }
+ 
+     function showLyrics(title, album, lyricsText, url) {
+-      document.getElementById('modalTrackTitle').innerText = title;
+-      document.getElementById('modalAlbumTitle').innerText = album;
+-      document.getElementById('modalLyricsBody').innerText = lyricsText || 'Lyrics coming soon.';
+-      document.getElementById('modalSunoBtn').href = url || '#';
+-      document.getElementById('lyricsModal').classList.add('active');
++      $('modalTrackTitle').innerText = title;
++      $('modalAlbumTitle').innerText = album;
++      $('modalLyricsBody').innerText = lyricsText || 'Lyrics coming soon.';
++      $('modalSunoBtn').href = url || '#';
++      $('lyricsModal').classList.add('active');
+     }
+ 
+     function openCurrentLyrics() {
+@@ -125,5 +249,17 @@
+     }
+ 
+     function closeLyrics() {
+-      document.getElementById('lyricsModal').classList.remove('active');
++      $('lyricsModal').classList.remove('active');
+     }
++
++    // ---------- start state: show the default song in the bar (not playing) ----------
++    (function init() {
++      buildQueue();
++      const first = queue.find((b) => b.getAttribute('data-url') === currentTrackData.url);
++      if (first) {
++        currentBtn = first;
++        queueIndex = queue.indexOf(first);
++        currentTrackData = { ...currentTrackData, lyrics: first.getAttribute('data-lyrics') || '' };
++        setTrackUI(first);
++      }
++    })();
+diff --git a/app/static/style.css b/app/static/style.css
+index 659d511..46f9fa7 100644
+--- a/app/static/style.css
++++ b/app/static/style.css
+@@ -126,7 +126,6 @@
+       .album { padding: 24px; }
+       .album.rev .cover { order: 0; }
+       nav .nav-links a:not(:last-child) { display: none; }
+-      .player-controls { display: none; }
+     }
+ 
+ .form-status{max-width:500px;margin:0 auto 20px;padding:14px;background:rgba(201,160,99,.2);border:1px solid var(--gold);border-radius:8px;color:var(--gold-light)}
+@@ -186,3 +185,79 @@ body.subpage { padding-bottom: 0; }
+   body.subpage nav .nav-links { gap: 12px; }
+   body.subpage nav .nav-links a { font-size: 11px; letter-spacing: .08em; }
+ }
++
++
++/* ---------- player: desktop bar + phone mini bar / full-screen player ---------- */
++.player-now-playing { background: none; border: 0; padding: 0; color: inherit; font: inherit; text-align: left; cursor: default; -webkit-tap-highlight-color: transparent; }
++.player-details > span { display: block; }
++.player-album-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
++.transport { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
++.skip-btn { width: 36px; height: 36px; border-radius: 50%; border: 0; background: transparent; color: var(--text); display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; }
++.skip-btn:hover { color: var(--gold); }
++.skip-btn svg { width: 20px; height: 20px; }
++.play-btn-large svg { width: 22px; height: 22px; }
++.player-bar .ico-pause, .player-bar.is-playing .ico-play { display: none; }
++.player-bar.is-playing .ico-pause { display: block; }
++.player-bar button, .player-bar a, .progress-bar { touch-action: manipulation; }
++.player-bar button:focus-visible, .progress-bar:focus-visible, .player-bar a:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
++.progress-bar { overflow: visible; touch-action: none; }
++.progress-bar::before { content: ""; position: absolute; left: 0; right: 0; top: -12px; bottom: -12px; }
++.mini-progress, .sheet-close { display: none; }
++.tracks li.now-playing .track-title { color: var(--gold); }
++.tracks li.now-playing { background: rgba(201, 160, 99, 0.08); }
++.player-bar #playerSunoLink { padding: 8px 14px; font-size: 11px; }
++.song-audio { width: 100%; max-width: 100%; }
++
++@media (max-width: 768px) {
++  body { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
++  body.subpage { padding-bottom: 0; }
++  .player-bar { padding: 10px 12px calc(10px + env(safe-area-inset-bottom)); gap: 8px; flex-wrap: nowrap; align-items: center; }
++  .player-now-playing { flex: 1 1 auto; min-width: 0; max-width: none; cursor: pointer; }
++  .player-cover { width: 48px; height: 48px; flex-shrink: 0; }
++  .player-details { min-width: 0; }
++  .player-controls { flex: 0 0 auto; max-width: none; gap: 0; }
++  .transport { gap: 2px; }
++  .skip-btn { width: 44px; height: 44px; }
++  .play-btn-large { width: 48px; height: 48px; }
++  .progress-bar-wrap, .player-right-actions { display: none; }
++  .mini-progress { display: block; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: rgba(255,255,255,0.1); }
++  .mini-fill { height: 100%; width: 0%; background: var(--gold); }
++
++  .player-bar.expanded { top: 0; flex-direction: column; justify-content: center; align-items: stretch; gap: 20px; z-index: 250; overflow-y: auto; -webkit-overflow-scrolling: touch; background: rgba(9, 12, 22, 0.98); padding: calc(64px + env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom)); }
++  .player-bar.expanded .mini-progress { display: none; }
++  .player-bar.expanded .sheet-close { display: flex; position: absolute; top: calc(10px + env(safe-area-inset-top)); left: 10px; width: 48px; height: 48px; align-items: center; justify-content: center; background: none; border: 0; color: var(--text); cursor: pointer; }
++  .player-bar.expanded .sheet-close svg { width: 28px; height: 28px; }
++  .player-bar.expanded .player-now-playing { flex: 0 0 auto; flex-direction: column; align-items: center; text-align: center; gap: 18px; cursor: default; }
++  .player-bar.expanded .player-cover { width: min(78vw, 40vh, 340px); height: min(78vw, 40vh, 340px); border-radius: 14px; box-shadow: 0 20px 50px rgba(0,0,0,0.6); }
++  .player-bar.expanded .player-track-name { font-size: 22px; white-space: normal; }
++  .player-bar.expanded .player-album-name { font-size: 13px; }
++  .player-bar.expanded .player-controls { flex-direction: column-reverse; align-items: stretch; gap: 14px; width: 100%; }
++  .player-bar.expanded .progress-bar-wrap { display: flex; gap: 8px; }
++  .player-bar.expanded .progress-bar { height: 6px; border-radius: 3px; }
++  .player-bar.expanded .time-display { font-size: 12px; }
++  .player-bar.expanded .transport { justify-content: center; gap: 22px; }
++  .player-bar.expanded .skip-btn { width: 56px; height: 56px; }
++  .player-bar.expanded .skip-btn svg { width: 26px; height: 26px; }
++  .player-bar.expanded .play-btn-large { width: 72px; height: 72px; }
++  .player-bar.expanded .play-btn-large svg { width: 30px; height: 30px; }
++  .player-bar.expanded .player-right-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
++  .player-bar.expanded .btn-lyrics, .player-bar.expanded .btn { min-height: 44px; display: inline-flex; align-items: center; }
++  body.player-open { overflow: hidden; }
++  .hero h1 { font-size: clamp(28px, 9vw, 64px); letter-spacing: 0.03em; }
++  /* comfortable touch targets in the song list */
++  .tracks .btn-icon { width: 44px; height: 44px; }
++  .tracks .btn-lyrics { min-height: 36px; padding: 6px 12px; display: inline-flex; align-items: center; }
++  .tracks .track-actions { gap: 8px; }
++  /* song rows: number + full title on top, buttons underneath, so titles are never squeezed */
++  .album { padding: 20px 16px; }
++  .tracks li { display: grid; grid-template-columns: 28px minmax(0, 1fr); align-items: start; column-gap: 10px; row-gap: 8px; padding: 14px 4px; }
++  .tracks li::before { padding-top: 3px; min-width: 0; }
++  .tracks .track-info { overflow: visible; }
++  .tracks .track-title { white-space: normal; overflow: visible; text-overflow: clip; }
++  .tracks .track-actions { grid-column: 2; flex-wrap: wrap; justify-content: flex-start; }
++  .tracks .btn-icon { order: -1; }
++}
++@media (max-width: 768px) and (max-height: 560px) {
++  .player-bar.expanded .player-cover { width: 96px; height: 96px; }
++}
++@media (prefers-reduced-motion: reduce) { .progress-fill, .play-btn-large { transition: none; } }
+diff --git a/app/templates/index.html b/app/templates/index.html
+index 66dc284..7500c69 100644
+--- a/app/templates/index.html
++++ b/app/templates/index.html
+@@ -165,7 +165,7 @@
+                     <button class="btn-icon"
+                       data-title="{{ track.title }}" data-album="{{ album.title }}" data-cover="{{ track.image or album.cover }}"
+                       data-url="{{ track.url }}" data-lyrics="{{ track.lyrics or '' }}" data-audiourl="{{ track.audioUrl or '' }}"
+-                      onclick="handlePlayClick(this)">▶</button>
++                      aria-label="Play {{ track.title }}" onclick="handlePlayClick(this)">▶</button>
+                   </div>
+                 </li>
+               {% endfor %}
+@@ -223,20 +223,26 @@
+ 
+   <footer>© 2026 Zimbermanne · Feel the soul · <span class="footer-views"><span class="footer-num" id="footerVisitorCount">{{ views }}</span> Total Views</span></footer>
+ 
+-  <!-- FLOATING MUSIC PLAYER BAR -->
+-  <div class="player-bar" id="playerBar">
+-    <div class="player-now-playing">
+-      <img id="playerCover" class="player-cover" src="https://cdn2.suno.ai/image_df5c9e26-e996-44ae-b9b0-8fcf468533e8.jpeg" alt="Now Playing">
+-      <div class="player-details">
+-        <div id="playerTrackTitle" class="player-track-name">Pesa inaongea sana</div>
+-        <div id="playerAlbumTitle" class="player-album-name">Mimi Ni Odogwu</div>
+-      </div>
+-    </div>
++  <!-- FLOATING MUSIC PLAYER BAR (mini bar on phones, tap it to open the full player) -->
++  <div class="player-bar" id="playerBar" role="region" aria-label="Music player">
++    <div class="mini-progress" id="miniProgress" aria-hidden="true"><div class="mini-fill" id="miniFill"></div></div>
++    <button class="sheet-close" id="playerCollapse" type="button" aria-label="Close full player"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg></button>
++    <button class="player-now-playing" id="playerExpand" type="button" aria-expanded="false" aria-label="Open full player">
++      <img id="playerCover" class="player-cover" src="https://cdn2.suno.ai/image_df5c9e26-e996-44ae-b9b0-8fcf468533e8.jpeg" alt="">
++      <span class="player-details">
++        <span id="playerTrackTitle" class="player-track-name">Pesa inaongea sana</span>
++        <span id="playerAlbumTitle" class="player-album-name">Mimi Ni Odogwu</span>
++      </span>
++    </button>
+ 
+     <div class="player-controls">
+-      <button class="play-btn-large" id="playBtn" onclick="togglePlay()">▶</button>
++      <div class="transport">
++        <button class="skip-btn" id="prevBtn" type="button" aria-label="Previous song"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" ><path fill="currentColor" d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg></button>
++        <button class="play-btn-large" id="playBtn" type="button" aria-label="Play" onclick="togglePlay()"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" class="ico-play"><path fill="currentColor" d="M8 5v14l11-7z"/></svg><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" class="ico-pause"><path fill="currentColor" d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg></button>
++        <button class="skip-btn" id="nextBtn" type="button" aria-label="Next song"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" ><path fill="currentColor" d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg></button>
++      </div>
+       <div class="progress-bar-wrap">
+-        <div class="progress-bar" onclick="seekProgress(event)">
++        <div class="progress-bar" id="progressBar" role="slider" tabindex="0" aria-label="Seek" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+           <div class="progress-fill" id="progressFill"></div>
+         </div>
+         <div class="time-display">
+@@ -247,8 +253,9 @@
+     </div>
+ 
+     <div class="player-right-actions">
+-      <button class="btn-lyrics" id="playerLyricsBtn" onclick="openCurrentLyrics()">View Lyrics</button>
+-      <a id="playerSunoLink" class="btn btn-secondary" style="padding: 8px 14px; font-size: 11px;" href="https://suno.com/song/82bcd874-4c22-45b1-a2e3-a40a27a73d82" target="_blank" rel="noopener">Stream on Suno ↗</a>
++      <button class="btn-lyrics" id="playerLyricsBtn" type="button" onclick="openCurrentLyrics()">Lyrics</button>
++      <a class="btn-lyrics" id="playerDownload" href="#" download data-dl data-filename="" hidden>MP3</a>
++      <a id="playerSunoLink" class="btn btn-secondary" href="https://suno.com/song/82bcd874-4c22-45b1-a2e3-a40a27a73d82" target="_blank" rel="noopener">Stream on Suno ↗</a>
+     </div>
+   </div>
+ 
+diff --git a/tests/test_app.py b/tests/test_app.py
+index 9c489ae..568872d 100644
+--- a/tests/test_app.py
++++ b/tests/test_app.py
+@@ -106,3 +106,12 @@ def test_download_links_and_robots(client):
+     assert f'href="/download/{slug}.mp3"' in client.get("/").text
+     assert "Download MP3" in client.get(f"/song/{slug}").text
+     assert "Disallow: /download/" in client.get("/robots.txt").text
++
++
++def test_player_has_phone_controls(client):
++    html = client.get("/").text
++    for needle in ('id="playerExpand"', 'id="prevBtn"', 'id="nextBtn"', 'id="miniProgress"', 'id="playerCollapse"', 'role="slider"'):
++        assert needle in html
++    assert "viewport-fit=cover" in html
++    css = client.get("/static/style.css").text
++    assert ".player-bar.expanded" in css and "env(safe-area-inset-bottom)" in css
+-- 
+2.43.0
+
