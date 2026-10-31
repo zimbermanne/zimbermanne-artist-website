@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+  <url>
+    <loc>https://zimbermanne.com/</loc>
+    <lastmod>2026-03-30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://cdn2.suno.ai/image_df5c9e26-e996-44ae-b9b0-8fcf468533e8.jpeg</image:loc>
+      <image:title>Zimbermanne — Mimi Ni Odogwu Album Artwork</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://cdn2.suno.ai/e5e52c91-70f9-4c21-9113-24238999085a.jpeg</image:loc>
+      <image:title>Zimbermanne — A Mafia's Diary Album Artwork</image:title>
+    </image:image>
+    <image:image>
+      <image:loc>https://cdn2.suno.ai/image_f1c63dea-d26e-43b6-8063-b3860d739162.jpeg</image:loc>
+      <image:title>Zimbermanne — The Weight of Gold: The Chronicles Album Artwork</image:title>
+    </image:image>
+  </url>
+  <url>
+    <loc>https://zimbermanne.com/#about</loc>
+    <lastmod>2026-03-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://zimbermanne.com/#story</loc>
+    <lastmod>2026-03-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://zimbermanne.com/#albums</loc>
+    <lastmod>2026-03-30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://zimbermanne.com/#contact</loc>
+    <lastmod>2026-03-30</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://zimbermanne.com/music.json</loc>
+    <lastmod>2026-03-30</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.6</priority>
+  </url>
+</urlset>

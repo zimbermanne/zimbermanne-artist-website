@@ -1,0 +1,34 @@
+# Allow full indexing for all web crawlers and search engine bots
+User-agent: *
+Allow: /
+
+# Googlebot
+User-agent: Googlebot
+Allow: /
+
+# Bingbot / Microsoft
+User-agent: Bingbot
+Allow: /
+
+# Applebot
+User-agent: Applebot
+Allow: /
+
+# DuckDuckBot
+User-agent: DuckDuckBot
+Allow: /
+
+# YandexBot
+User-agent: Yandex
+Allow: /
+
+# Social media preview crawlers
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+# Sitemaps
+Sitemap: https://zimbermanne.com/sitemap.xml
+Sitemap: https://zimbermanne-artist-website.up.railway.app/sitemap.xml

@@ -5,7 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "sync": "node sync-suno.js"
+    "sync": "node sync-suno.js",
+    "ping-crawlers": "node ping-crawlers.js"
   },
   "engines": {
     "node": ">=18"
