@@ -341,11 +341,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
             <ol class="tracks">
               <?php foreach ($album['tracks'] as $track): ?>
                 <?php
-                  $lyricsEscaped = htmlspecialchars($track['lyrics'] ?? '', ENT_QUOTES, 'UTF-8');
-                  $titleEscaped = htmlspecialchars($track['title'], ENT_QUOTES, 'UTF-8');
-                  $albumTitleEscaped = htmlspecialchars($album['title'], ENT_QUOTES, 'UTF-8');
-                  $coverEscaped = htmlspecialchars($album['cover'], ENT_QUOTES, 'UTF-8');
-                  $urlEscaped = htmlspecialchars($track['url'], ENT_QUOTES, 'UTF-8');
+                  $titleEsc = htmlspecialchars($track['title'], ENT_QUOTES, 'UTF-8');
+                  $albumTitleEsc = htmlspecialchars($album['title'], ENT_QUOTES, 'UTF-8');
+                  $coverEsc = htmlspecialchars($album['cover'], ENT_QUOTES, 'UTF-8');
+                  $urlEsc = htmlspecialchars($track['url'], ENT_QUOTES, 'UTF-8');
+                  $lyricsEsc = htmlspecialchars($track['lyrics'] ?? '', ENT_QUOTES, 'UTF-8');
                 ?>
                 <li>
                   <div class="track-info">
@@ -355,8 +355,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
                     <?php endif; ?>
                   </div>
                   <div class="track-actions">
-                    <button class="btn-lyrics" onclick="showLyrics('<?php echo $titleEscaped; ?>', '<?php echo $albumTitleEscaped; ?>', '<?php echo addslashes($track['lyrics'] ?? ''); ?>', '<?php echo $urlEscaped; ?>')">Lyrics</button>
-                    <button class="btn-icon" onclick="playTrack('<?php echo $titleEscaped; ?>', '<?php echo $albumTitleEscaped; ?>', '<?php echo $coverEscaped; ?>', '<?php echo $urlEscaped; ?>', '<?php echo addslashes($track['lyrics'] ?? ''); ?>')">▶</button>
+                    <button class="btn-lyrics"
+                      data-title="<?php echo $titleEsc; ?>"
+                      data-album="<?php echo $albumTitleEsc; ?>"
+                      data-cover="<?php echo $coverEsc; ?>"
+                      data-url="<?php echo $urlEsc; ?>"
+                      data-lyrics="<?php echo $lyricsEsc; ?>"
+                      onclick="handleLyricsClick(this)">Lyrics</button>
+                    <button class="btn-icon"
+                      data-title="<?php echo $titleEsc; ?>"
+                      data-album="<?php echo $albumTitleEsc; ?>"
+                      data-cover="<?php echo $coverEsc; ?>"
+                      data-url="<?php echo $urlEsc; ?>"
+                      data-lyrics="<?php echo $lyricsEsc; ?>"
+                      onclick="handlePlayClick(this)">▶</button>
                   </div>
                 </li>
               <?php endforeach; ?>
@@ -455,6 +467,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
       url: 'https://suno.com/song/82bcd874-4c22-45b1-a2e3-a40a27a73d82',
       lyrics: '[Verse 1]\nJana nilisema, \'mimi sina kitu\',\nLeo nauliza, \'Pesa iko wapi?\'\nPesa ikifanya kazi, kesho inakupa nafasi,\nJifunze, wekeza, anza hata kwa kiasi.\n\n[Bridge]\nNitaenda kijijini, nikakae na wazee,\nChini ya mti, swali moja moyoni:\n\'Mzee, nifanyeje? Kibati changu hakijai!\'\n\n[Chorus]\nPesa inaongea sana, Pesa ikiwa na mpango,\nKesho inakuwa sawa! Kibati cha kijiji kinahitaji kibati imara.'
     };
+
+    function handlePlayClick(btn) {
+      const title = btn.getAttribute('data-title');
+      const album = btn.getAttribute('data-album');
+      const cover = btn.getAttribute('data-cover');
+      const url = btn.getAttribute('data-url');
+      const lyrics = btn.getAttribute('data-lyrics');
+      playTrack(title, album, cover, url, lyrics);
+    }
+
+    function handleLyricsClick(btn) {
+      const title = btn.getAttribute('data-title');
+      const album = btn.getAttribute('data-album');
+      const url = btn.getAttribute('data-url');
+      const lyrics = btn.getAttribute('data-lyrics');
+      showLyrics(title, album, lyrics, url);
+    }
 
     function playTrack(title, album, cover, url, lyrics) {
       currentTrackData = { title, album, cover, url, lyrics: lyrics || currentTrackData.lyrics };
