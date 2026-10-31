@@ -1,13 +1,11 @@
 /**
- * Suno Auto-Sync Engine for Zimbermanne Website
+ * Suno Direct Auto-Sync Engine for Zimbermanne Website
  *
  * Usage:
  *   npm run sync
  *
- * Direct Data Sync from https://suno.com/@zimbermannelit
- * - Fetches profile, albums, and tracks directly from Suno
- * - Extracts artwork, track titles, song links (https://suno.com/song/...), and lyrics
- * - Updates music.json automatically
+ * Syncs profile, artwork, music list, lyrics, and direct audio stream URLs
+ * (https://cdn1.suno.ai/[song-id].mp4) from Suno directly into music.json
  */
 
 const fs = require("fs");
@@ -17,13 +15,18 @@ const SUNO_HANDLE = "zimbermannelit";
 const PROFILE_URL = `https://suno.com/@${SUNO_HANDLE}`;
 const MUSIC_JSON_PATH = path.join(__dirname, "music.json");
 
-// Helper to normalize strings for matching
 function normalize(str) {
   return (str || "")
     .toLowerCase()
     .replace(/[^\w\s]/g, "")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+// Extract UUID from Suno song URL
+function getSongId(url) {
+  const m = (url || "").match(/[0-9a-f-]{36}/i);
+  return m ? m[0] : null;
 }
 
 async function syncDirectSunoData() {
@@ -60,28 +63,22 @@ async function syncDirectSunoData() {
     if (!title.includes("Suno") && !title.includes("Sharing") && !title.includes("Publish") && !title.includes("Edit")) {
       const key = normalize(title);
       if (!clipMap.has(key)) {
-        clipMap.set(key, { id, title, url: `https://suno.com/song/${id}` });
+        clipMap.set(key, { id, title, url: `https://suno.com/song/${id}`, audioUrl: `https://cdn1.suno.ai/${id}.mp4` });
       }
     }
   }
 
   console.log(`[Sync] Extracted ${clipMap.size} unique track titles from Suno profile.`);
 
-  // 2. Extract album/playlist cover images
+  // 2. Album Cover Map
   const albumCovers = new Map();
   albumCovers.set("mimi-ni-odogwu", "https://cdn2.suno.ai/image_df5c9e26-e996-44ae-b9b0-8fcf468533e8.jpeg");
   albumCovers.set("a-mafias-diary", "https://cdn2.suno.ai/e5e52c91-70f9-4c21-9113-24238999085a.jpeg");
   albumCovers.set("the-weight-of-gold", "https://cdn2.suno.ai/image_f1c63dea-d26e-43b6-8063-b3860d739162.jpeg");
 
-  // Search for cover images in HTML
-  const imgRegex = /https:\/\/cdn2\.suno\.ai\/[a-f0-9_-]+\.(jpeg|jpg|png)/gi;
-  const images = unescaped.match(imgRegex) || [];
-  console.log(`[Sync] Found ${images.length} CDN image assets on Suno.`);
-
-  // 3. Match & update tracks in music.json
+  // 3. Match & update tracks in music.json with direct audioUrl stream links
   let updatedTracks = 0;
   musicData.albums.forEach(album => {
-    // Ensure artwork URL is set
     if (albumCovers.has(album.id)) {
       album.cover = albumCovers.get(album.id);
     }
@@ -91,15 +88,14 @@ async function syncDirectSunoData() {
       const match = clipMap.get(key);
       if (match) {
         track.url = match.url;
+        track.audioUrl = match.audioUrl;
         updatedTracks++;
       } else {
-        // Partial match check
-        for (const [cKey, cData] of clipMap.entries()) {
-          if (cKey.includes(key) || key.includes(cKey)) {
-            track.url = cData.url;
-            updatedTracks++;
-            break;
-          }
+        // Fallback: derive audioUrl from existing track URL
+        const songId = getSongId(track.url);
+        if (songId) {
+          track.audioUrl = `https://cdn1.suno.ai/${songId}.mp4`;
+          updatedTracks++;
         }
       }
     });
@@ -109,7 +105,7 @@ async function syncDirectSunoData() {
 
   // Save updated music.json
   fs.writeFileSync(MUSIC_JSON_PATH, JSON.stringify(musicData, null, 2), "utf8");
-  console.log(`[Sync] Successfully updated music.json! (${updatedTracks} tracks matched to live Suno URLs)`);
+  console.log(`[Sync] Successfully updated music.json with direct live MP4 audio stream URLs! (${updatedTracks} tracks synchronized)`);
 }
 
 syncDirectSunoData().catch(err => {
