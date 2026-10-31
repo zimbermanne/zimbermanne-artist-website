@@ -22,7 +22,7 @@ Open http://127.0.0.1:8000. Local data goes to `data/site.db`.
 | `ADMIN_TOKEN` | Optional. Long random string. Enables the fan-list CSV export (see below). |
 | `SITE_URL` | Optional. Public address used in canonical links, sitemap and emails (default `https://zimbermanne.com`). |
 | `PLAUSIBLE_DOMAIN` | Optional. Your domain as registered in Plausible (e.g. `zimbermanne.com`). Turns analytics on. |
-| `VIEW_MULTIPLIER` | Optional. The visitor counter shows real count x this number (default 10, set 1 for exact). |
+| `VIEW_MULTIPLIER` | Optional. The visitor counter shows real count x this number (default 100, set 1 for exact). |
 
 Every inquiry is saved in the `messages` table first, so nothing is lost if email is not set up.
 

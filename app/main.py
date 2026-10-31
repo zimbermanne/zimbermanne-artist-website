@@ -22,7 +22,7 @@ from . import db, music
 APP_DIR = Path(__file__).resolve().parent
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 # Shown number = real count x VIEW_MULTIPLIER (set the variable to 1 for the exact count)
-VIEW_MULTIPLIER = int(os.getenv("VIEW_MULTIPLIER", "10"))
+VIEW_MULTIPLIER = int(os.getenv("VIEW_MULTIPLIER", "100"))
 BOT_WORDS = ("bot", "crawl", "spider", "slurp", "preview", "facebookexternalhit")
 
 SITE_URL = os.getenv("SITE_URL", "https://zimbermanne.com").rstrip("/")
