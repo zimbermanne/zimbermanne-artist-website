@@ -36,6 +36,8 @@
 
     <div class="song-actions">
       <a class="btn" href="{{ track.url }}" target="_blank" rel="noopener">Stream on Suno ↗</a>
+      {% if track.url or track.audioUrl %}<a class="btn btn-secondary" href="/download/{{ track.slug }}.mp3" download
+        data-dl data-filename="{{ track.title }}{% if track.subtitle %} {{ track.subtitle }}{% endif %} - Zimbermanne.mp3">Download MP3</a>{% endif %}
       <button class="btn btn-secondary" type="button" id="shareBtn" data-url="{{ page_url }}" data-title="{{ track.title }} — Zimbermanne">Share</button>
     </div>
 

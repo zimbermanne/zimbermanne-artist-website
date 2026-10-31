@@ -159,6 +159,9 @@
                       data-title="{{ track.title }}" data-album="{{ album.title }}" data-cover="{{ track.image or album.cover }}"
                       data-url="{{ track.url }}" data-lyrics="{{ track.lyrics or '' }}"
                       onclick="handleLyricsClick(this)">Lyrics</button>
+                    {% if track.url or track.audioUrl %}<a class="btn-lyrics" href="/download/{{ track.slug }}.mp3" download
+                      data-dl data-filename="{{ track.title }}{% if track.subtitle %} {{ track.subtitle }}{% endif %} - Zimbermanne.mp3"
+                      title="Download as MP3" aria-label="Download {{ track.title }} as MP3">MP3</a>{% endif %}
                     <button class="btn-icon"
                       data-title="{{ track.title }}" data-album="{{ album.title }}" data-cover="{{ track.image or album.cover }}"
                       data-url="{{ track.url }}" data-lyrics="{{ track.lyrics or '' }}" data-audiourl="{{ track.audioUrl or '' }}"

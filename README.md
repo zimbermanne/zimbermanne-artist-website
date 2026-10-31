@@ -51,6 +51,15 @@ share preview and player bar). A track with no `image` falls back to its album c
 not synced; change them by hand in `music.json`. New songs on Suno are listed in the log but must be
 added to `music.json` by hand, because the script cannot know which album they belong to.
 
+## MP3 download
+Every track has an `MP3` link on the home page and a "Download MP3" button on its song page. They point to
+`/download/<slug>.mp3`, which streams the song's MP3 from Suno's CDN (`cdn1.suno.ai/<song id>.mp3`, the id is taken
+from the track's `url`) through the site, with the right filename. `app/static/download.js` reads that stream in
+chunks while showing progress, and when the stream is complete builds one MP3 file and saves it. Without JavaScript
+the link is a normal download. Only Suno's CDN is ever fetched, the route is rate limited, and `/download/` is
+disallowed in `robots.txt`. If a download fails with "Failed, retry", Suno has no MP3 at that address for the song
+(check the `/download/<slug>.mp3` response on Railway).
+
 ## Tests
 ```
 pip install -r requirements-dev.txt

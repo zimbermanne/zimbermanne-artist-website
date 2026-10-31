@@ -68,3 +68,41 @@ def test_subscribe_unsubscribe_and_export(client):
 def test_bad_subscribe_email(client):
     r = client.post("/subscribe", data={"email": "nope"}, follow_redirects=False)
     assert "badsub" in r.headers["location"]
+
+
+def _fake_suno(monkeypatch, status=200, body=b"ID3" + b"\x00" * 5000):
+    import httpx
+
+    from app import main
+
+    seen = []
+
+    def handler(request):
+        seen.append(str(request.url))
+        return httpx.Response(status, stream=httpx.ByteStream(body), headers={"content-type": "audio/mpeg", "content-length": str(len(body))})
+
+    monkeypatch.setattr(main, "_stream_client", lambda: httpx.AsyncClient(transport=httpx.MockTransport(handler)))
+    return seen, body
+
+
+def test_download_streams_mp3_with_length_and_filename(client, monkeypatch):
+    seen, body = _fake_suno(monkeypatch)
+    slug = music.all_slugs()[0]
+    r = client.get(f"/download/{slug}.mp3")  # default Accept-Encoding: gzip must not touch it
+    assert r.status_code == 200 and r.content == body
+    assert r.headers["content-type"] == "audio/mpeg" and r.headers["content-length"] == str(len(body))
+    assert "attachment" in r.headers["content-disposition"] and "Zimbermanne.mp3" in r.headers["content-disposition"]
+    assert seen[0].startswith("https://cdn1.suno.ai/") and seen[0].endswith(".mp3")
+
+
+def test_download_handles_missing_and_upstream_errors(client, monkeypatch):
+    assert client.get("/download/does-not-exist.mp3").status_code == 404
+    _fake_suno(monkeypatch, status=404)
+    assert client.get(f"/download/{music.all_slugs()[0]}.mp3").status_code == 502
+
+
+def test_download_links_and_robots(client):
+    slug = music.all_slugs()[0]
+    assert f'href="/download/{slug}.mp3"' in client.get("/").text
+    assert "Download MP3" in client.get(f"/song/{slug}").text
+    assert "Disallow: /download/" in client.get("/robots.txt").text
