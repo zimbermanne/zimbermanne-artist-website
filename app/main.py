@@ -18,6 +18,8 @@ APP_DIR = Path(__file__).resolve().parent
 ROOT = APP_DIR.parent
 MUSIC_FILE = ROOT / "music.json"
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+# Shown number = real count x VIEW_MULTIPLIER (set the variable to 1 for the exact count)
+VIEW_MULTIPLIER = int(os.getenv("VIEW_MULTIPLIER", "10"))
 BOT_WORDS = ("bot", "crawl", "spider", "slurp", "preview", "facebookexternalhit")
 
 templates = Jinja2Templates(directory=str(APP_DIR / "templates"))
@@ -104,7 +106,7 @@ async def index(request: Request, status: str | None = None):
 
     response = templates.TemplateResponse(
         request, "index.html",
-        {"albums": load_music().get("albums", []), "views": f"{views:,}", "form_status": form_status},
+        {"albums": load_music().get("albums", []), "views": f"{views * VIEW_MULTIPLIER:,}", "form_status": form_status},
     )
     if new_visitor:
         response.set_cookie("zv", "1", max_age=86400, httponly=True, samesite="lax")
