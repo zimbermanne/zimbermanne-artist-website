@@ -65,6 +65,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['contact_submit'])) {
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Zimbermanne — Afro Soul Pop Artist | Official Website</title>
 
+  <!-- FAVICON -->
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="alternate icon" href="/favicon.svg">
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon.svg">
+  <meta name="theme-color" content="#07090f">
+
   <!-- SEO & WEB CRAWLER INDEXING META TAGS -->
   <meta name="description" content="Official website of Zimbermanne, Afro Soul Pop artist. Stream featured albums including Mimi Ni Odogwu, A Mafia's Diary, and The Weight of Gold: The Chronicles, view lyrics, and listen on Suno.">
   <meta name="keywords" content="Zimbermanne, Afro Soul Pop, Mimi Ni Odogwu, A Mafia's Diary, The Weight of Gold, Swahili music, Igbo music, Suno, Afrobeat, Trip-Hop, zimbermannelit">
