@@ -1,0 +1,22 @@
+/* Adaptive light/dark theme: dark is the default (site.css), light follows the device. */
+.contact-form { max-width: 500px; margin: 0 auto 30px; display: flex; flex-direction: column; gap: 14px; }
+.contact-form input, .contact-form textarea { padding: 14px; background: var(--bg); border: 1px solid var(--line); color: var(--text); border-radius: 6px; font-family: inherit; }
+.loading-note { text-align: center; color: var(--muted); padding: 10vh 6vw; }
+body { padding-bottom: 0; }
+body:has(.player-bar) { padding-bottom: 90px; }
+a.brand { text-decoration: none; }
+footer .footer-views { display: block; }
+
+@media (prefers-color-scheme: light) {
+  :root {
+    --bg: #faf7f1; --bg-alt: #f1ece1; --panel: #ffffff; --panel-hover: #f5efe3;
+    --text: #1d1a14; --muted: #6b6558; --gold: #9a6f2c; --gold-light: #7d5a22;
+    --gold-glow: rgba(154, 111, 44, .22); --line: rgba(154, 111, 44, .28); --glass: rgba(250, 247, 241, .85);
+    color-scheme: light;
+  }
+  .hero { background: radial-gradient(ellipse at 50% 10%, #efe3cc 0%, var(--bg) 70%); }
+  .hero h1 { background: linear-gradient(180deg, #1d1a14 30%, var(--muted) 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  .song-lyrics { color: var(--text); }
+  .player-bar { background: rgba(255, 255, 255, .96); }
+  @media (max-width: 768px) { .player-bar.expanded { background: rgba(250, 247, 241, .99); } }
+}

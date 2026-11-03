@@ -1,0 +1,45 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient -->
+    <radialGradient id="bgGrad" cx="50%" cy="30%" r="75%">
+      <stop offset="0%" stop-color="#1b2339"/>
+      <stop offset="60%" stop-color="#0d121f"/>
+      <stop offset="100%" stop-color="#07090f"/>
+    </radialGradient>
+
+    <!-- Metallic Gold Gradient -->
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8e5c2"/>
+      <stop offset="35%" stop-color="#e6c594"/>
+      <stop offset="70%" stop-color="#c9a063"/>
+      <stop offset="100%" stop-color="#8a612b"/>
+    </linearGradient>
+
+    <!-- Outer Gold Ring Glow -->
+    <filter id="goldGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="8" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Background Circle -->
+  <circle cx="256" cy="256" r="240" fill="url(#bgGrad)" stroke="url(#goldGrad)" stroke-width="12" filter="url(#goldGlow)"/>
+
+  <!-- Inner Gold Decorative Ring -->
+  <circle cx="256" cy="256" r="216" fill="none" stroke="url(#goldGrad)" stroke-width="2" stroke-dasharray="8 6" opacity="0.6"/>
+
+  <!-- Stylized Serif Monogram 'Z' for Zimbermanne -->
+  <g fill="url(#goldGrad)">
+    <!-- Top Horizontal Bar with Serif Accent -->
+    <path d="M 140,145 C 140,135 150,130 170,130 L 340,130 C 360,130 370,138 370,148 C 370,158 358,162 342,162 L 205,162 L 345,335 C 358,351 368,365 372,375 C 372,385 360,390 340,390 L 160,390 C 140,390 130,382 130,372 C 130,362 142,358 158,358 L 305,358 L 160,180 C 148,165 140,154 140,145 Z"/>
+
+    <!-- Top Left Serif Diamond -->
+    <polygon points="140,130 155,115 140,100 125,115"/>
+
+    <!-- Bottom Right Serif Diamond -->
+    <polygon points="370,390 385,375 370,360 355,375"/>
+
+    <!-- Music Note Accent Dot -->
+    <circle cx="340" cy="180" r="14" />
+  </g>
+</svg>

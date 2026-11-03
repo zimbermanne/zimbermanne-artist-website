@@ -1,8 +1,7 @@
-__pycache__/
-*.pyc
-.venv/
-data/
+node_modules
+frontend/dist
+backend/data
+__pycache__
+.venv
 .env
-.DS_Store
-.idea/
-.pytest_cache/
+*.pyc
