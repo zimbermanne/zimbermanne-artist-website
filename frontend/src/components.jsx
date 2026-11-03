@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { sendContact, subscribe } from "./api";
 import { DownloadButton, IconPause, IconPlay, usePlayer } from "./player";
-import { SUNO_PROFILE } from "./utils";
+import { fmtCount, SUNO_PROFILE } from "./utils";
 
 /* ---- layout ---- */
 export function Nav({ home, views }) {
@@ -31,6 +31,8 @@ export function Footer({ views }) {
 }
 
 /* ---- discography ---- */
+const totalPlays = (t) => Object.values(t.plays || {}).reduce((a, b) => a + b, 0);
+
 function TrackRow({ item }) {
   const { track } = item;
   const { activeSlug, playing, play, openLyrics } = usePlayer();
@@ -41,6 +43,7 @@ function TrackRow({ item }) {
       <div className="track-info">
         <Link className="track-title" to={`/song/${track.slug}`}>{track.title}</Link>
         {track.subtitle && <span className="track-subtitle">{track.subtitle}</span>}
+        {totalPlays(track) > 0 && <span className="track-plays">{fmtCount(totalPlays(track))} plays</span>}
       </div>
       <div className="track-actions">
         <button className="btn-lyrics" type="button" onClick={() => openLyrics(item)}>Lyrics</button>
@@ -164,6 +167,45 @@ export function ContactForm({ whatsappUrl }) {
       <div className="social">
         {SOCIALS.map(([n, href, handle]) => <a key={n} href={href} target="_blank" rel="noopener noreferrer">{n}<span>{handle}</span></a>)}
         <a href={SUNO_PROFILE} target="_blank" rel="noopener noreferrer" style={{ borderColor: "var(--gold)", color: "var(--gold)" }}>Suno AI<span>@zimbermannelit</span></a>
+      </div>
+    </section>
+  );
+}
+
+/* ---- listeners + platforms ---- */
+export function ListenerStats({ stats = {} }) {
+  const plays = (stats.suno_plays || 0) + (stats.soundcloud_plays || 0);
+  const items = [
+    [plays, "Total plays"],
+    [stats.spotify_monthly_listeners, "Spotify monthly listeners"],
+    [(stats.spotify_followers || 0) + (stats.soundcloud_followers || 0) + (stats.suno_followers || 0), "Followers"],
+    [stats.suno_songs, "Songs"],
+  ].filter(([v]) => v > 0);
+  if (!items.length) return null;
+  return (
+    <section className="listener-stats" aria-label="Listener numbers">
+      {items.map(([v, label]) => <div key={label}><b>{fmtCount(v)}</b><span>{label}</span></div>)}
+    </section>
+  );
+}
+
+export function ListenEverywhere({ site }) {
+  const sc = site.soundcloudUrl;
+  return (
+    <section id="listen" className="listen">
+      <h2><small>Listen</small>Everywhere you stream</h2>
+      <div className="listen-grid">
+        {site.spotifyArtistId && (
+          <iframe title="Zimbermanne on Spotify" data-testid="embed-iframe" style={{ borderRadius: 12 }}
+            src={`https://open.spotify.com/embed/artist/${site.spotifyArtistId}?utm_source=generator`}
+            width="100%" height="352" frameBorder="0" allowFullScreen
+            allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture" loading="lazy" />
+        )}
+        {sc && (
+          <iframe title="Zimbermanne on SoundCloud" width="100%" height="352" scrolling="no" frameBorder="no" loading="lazy"
+            style={{ borderRadius: 12 }} allow="autoplay"
+            src={`https://w.soundcloud.com/player/?url=${encodeURIComponent(sc)}&color=%23c9a24b&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false&visual=false`} />
+        )}
       </div>
     </section>
   );

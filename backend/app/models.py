@@ -31,6 +31,10 @@ class Album(Base):
     cover: Mapped[str] = mapped_column(String(600), default="")
     chips_json: Mapped[str] = mapped_column(Text, default="[]")
     position: Mapped[int] = mapped_column(Integer, default=0)
+    suno_album_id: Mapped[str] = mapped_column(String(60), default="")
+    spotify_album_id: Mapped[str] = mapped_column(String(60), default="")
+    spotify_url: Mapped[str] = mapped_column(String(600), default="")
+    soundcloud_url: Mapped[str] = mapped_column(String(600), default="")
     tracks: Mapped[list["Track"]] = relationship(
         back_populates="album", cascade="all, delete-orphan", order_by="Track.position"
     )
@@ -60,6 +64,10 @@ class Track(Base):
     duration: Mapped[str] = mapped_column(String(20), default="")
     lyrics: Mapped[str] = mapped_column(Text, default="")
     position: Mapped[int] = mapped_column(Integer, default=0)
+    spotify_url: Mapped[str] = mapped_column(String(600), default="")
+    soundcloud_url: Mapped[str] = mapped_column(String(600), default="")
+    suno_plays: Mapped[int] = mapped_column(Integer, default=0)
+    soundcloud_plays: Mapped[int] = mapped_column(Integer, default=0)
     album: Mapped[Album] = relationship(back_populates="tracks")
 
 
@@ -87,3 +95,22 @@ class Counter(Base):
     __tablename__ = "counters"
     name: Mapped[str] = mapped_column(String(40), primary_key=True)
     value: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class PlatformStat(Base):
+    """One number per key, e.g. suno_plays. `source` is "auto" (set by a sync) or "manual" (typed in the admin)."""
+    __tablename__ = "platform_stats"
+    key: Mapped[str] = mapped_column(String(60), primary_key=True)
+    value: Mapped[int] = mapped_column(Integer, default=0)
+    source: Mapped[str] = mapped_column(String(10), default="auto")
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class SyncRun(Base):
+    __tablename__ = "sync_runs"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    source: Mapped[str] = mapped_column(String(20), index=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    ok: Mapped[bool] = mapped_column(Boolean, default=False)
+    summary: Mapped[str] = mapped_column(String(300), default="")
+    log: Mapped[str] = mapped_column(Text, default="")

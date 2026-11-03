@@ -8,8 +8,12 @@ from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Res
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy import select
 
+import asyncio
+
 from . import catalog, config
 from .database import Base, SessionLocal, engine
+from .migrate import add_missing_columns
+from .sync import runner
 from .models import AdminUser, Track
 from .routers import admin, auth, public
 from .security import hash_password
@@ -20,6 +24,9 @@ log = logging.getLogger("zimbermanne")
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     Base.metadata.create_all(engine)
+    added_cols = add_missing_columns(engine)
+    if added_cols:
+        log.warning("Added columns: %s", ", ".join(added_cols))
     with SessionLocal() as db:
         added = catalog.seed_catalog(db)
         if added:
@@ -32,7 +39,9 @@ async def lifespan(app: FastAPI):
                 log.warning("Created admin user %s", config.ADMIN_EMAIL)
         elif not db.scalar(select(AdminUser).limit(1)):
             log.warning("No admin user yet: set ADMIN_EMAIL and ADMIN_PASSWORD and restart.")
+    task = asyncio.create_task(runner.scheduler())
     yield
+    task.cancel()
 
 
 app = FastAPI(title="Zimbermanne API", lifespan=lifespan, docs_url="/api/docs", openapi_url="/api/openapi.json")

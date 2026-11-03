@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from .. import audio, catalog, config, mailer
 from ..database import get_db
-from ..models import Counter, Message, Subscriber, Track
+from ..models import Counter, Message, PlatformStat, Subscriber, Track
 from ..security import client_ip, rate_limited
 
 router = APIRouter()
@@ -47,7 +47,12 @@ def song(slug: str, db: Session = Depends(get_db)):
 @router.get("/api/site")
 def site(db: Session = Depends(get_db)):
     wa = f"https://wa.me/{config.WHATSAPP_NUMBER}?text=" + quote("Hi Zimbermanne, I'd like to book you.") if config.WHATSAPP_NUMBER else None
-    return {"whatsappUrl": wa, "views": _views(db)}
+    stats = {r.key: r.value for r in db.scalars(select(PlatformStat))}
+    return {
+        "whatsappUrl": wa, "views": _views(db), "stats": stats,
+        "spotifyArtistId": config.SPOTIFY_ARTIST_ID, "soundcloudUrl": config.SOUNDCLOUD_PROFILE_URL,
+        "sunoUrl": f"https://suno.com/@{config.SUNO_HANDLE}",
+    }
 
 
 @router.post("/api/visit")

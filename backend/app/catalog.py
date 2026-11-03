@@ -43,6 +43,12 @@ def track_out(t: Track) -> dict:
         d["audioUrl"] = t.audio_url
     if t.image:
         d["image"] = t.image
+    if t.spotify_url:
+        d["spotifyUrl"] = t.spotify_url
+    if t.soundcloud_url:
+        d["soundcloudUrl"] = t.soundcloud_url
+    plays = {"suno": t.suno_plays, "soundcloud": t.soundcloud_plays}
+    d["plays"] = {k: v for k, v in plays.items() if v}
     return d
 
 
@@ -50,6 +56,7 @@ def album_out(a: Album, with_tracks: bool = True) -> dict:
     d = {
         "id": a.key, "dbId": a.id, "number": a.number, "title": a.title, "tagline": a.tagline,
         "description": a.description, "cover": a.cover, "chips": a.chips,
+        "spotifyUrl": a.spotify_url, "soundcloudUrl": a.soundcloud_url,
     }
     if with_tracks:
         d["tracks"] = [track_out(t) for t in a.tracks]

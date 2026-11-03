@@ -77,3 +77,6 @@ export async function downloadSubscribersCsv(all = false) {
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 10000);
 }
+export const adminSync = () => request("/api/admin/sync", A);
+export const runSync = (source) => request(`/api/admin/sync/${source}`, { ...A, method: "POST" });
+export const setPlatformStat = (key, value) => request(`/api/admin/platform-stats/${key}`, { ...A, method: "PUT", body: { value } });

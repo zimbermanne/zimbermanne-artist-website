@@ -3,7 +3,7 @@ import { Navigate, Outlet, Route, Routes, useLocation } from "react-router-dom";
 import { getMusic, getSite, registerVisit } from "./api";
 import { AuthProvider } from "./auth";
 import { Footer, Nav } from "./components";
-import { AdminLayout, Account, Catalog, Dashboard, Fans, Inbox, Login } from "./admin";
+import { AdminLayout, Account, Catalog, Dashboard, Fans, Inbox, Login, Sync } from "./admin";
 import { Home, NotFound, SongPage, UnsubscribePage } from "./pages";
 import { LyricsModal, PlayerBar, PlayerProvider } from "./player";
 
@@ -33,11 +33,11 @@ function PublicSite({ albums, site }) {
 export default function App() {
   const [albums, setAlbums] = useState([]);
   const [failed, setFailed] = useState(false);
-  const [site, setSite] = useState({ whatsappUrl: null, views: null });
+  const [site, setSite] = useState({ whatsappUrl: null, views: null, stats: {} });
 
   useEffect(() => {
     getMusic().then(setAlbums).catch(() => setFailed(true));
-    getSite().then((s) => setSite((p) => ({ whatsappUrl: s.whatsappUrl, views: p.views ?? s.views }))).catch(() => {});
+    getSite().then((s) => setSite((p) => ({ ...s, views: p.views ?? s.views }))).catch(() => {});
     registerVisit().then((v) => setSite((p) => ({ ...p, views: v.views }))).catch(() => {});
   }, []);
 
@@ -47,7 +47,7 @@ export default function App() {
         <ScrollManager />
         <Routes>
           <Route element={<PublicSite albums={albums} site={site} />}>
-            <Route index element={<Home albums={albums} failed={failed} whatsappUrl={site.whatsappUrl} />} />
+            <Route index element={<Home albums={albums} failed={failed} site={site} />} />
             <Route path="song/:slug" element={<SongPage />} />
             <Route path="unsubscribe/:token" element={<UnsubscribePage />} />
             <Route path="*" element={<NotFound />} />
@@ -57,6 +57,7 @@ export default function App() {
           <Route path="admin" element={<AdminLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="catalog" element={<Catalog />} />
+            <Route path="sync" element={<Sync />} />
             <Route path="inbox" element={<Inbox />} />
             <Route path="fans" element={<Fans />} />
             <Route path="account" element={<Account />} />
