@@ -11,13 +11,13 @@
   <meta property="og:description" content="{{ desc }}">
   <meta property="og:url" content="{{ page_url }}">
   <meta property="og:site_name" content="Zimbermanne">
-  <meta property="og:image" content="{{ cover }}">
+  <meta property="og:image" content="{{ cover|abs_url }}">
   <meta property="music:musician" content="{{ site_url }}/">
   <meta property="music:album" content="{{ site_url }}/#{{ album.id }}">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="{{ track.title }} — Zimbermanne">
   <meta name="twitter:description" content="{{ desc }}">
-  <meta name="twitter:image" content="{{ cover }}">
+  <meta name="twitter:image" content="{{ cover|abs_url }}">
   <link rel="preconnect" href="https://cdn2.suno.ai">
   <script type="application/ld+json">{{ song_ld|safe }}</script>
 {% endblock %}
