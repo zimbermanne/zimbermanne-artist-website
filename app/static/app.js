@@ -10,7 +10,7 @@
     let currentTrackData = {
       title: 'Pesa inaongea sana',
       album: 'Mimi Ni Odogwu',
-      cover: 'https://cdn2.suno.ai/image_df5c9e26-e996-44ae-b9b0-8fcf468533e8.jpeg',
+      cover: '/static/img/mimi-ni-odogwu.jpg',
       url: 'https://suno.com/song/82bcd874-4c22-45b1-a2e3-a40a27a73d82',
       audioUrl: 'https://cdn1.suno.ai/82bcd874-4c22-45b1-a2e3-a40a27a73d82.mp4',
       lyrics: ''
