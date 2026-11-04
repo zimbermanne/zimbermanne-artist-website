@@ -11,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from .. import audio, catalog, config, mailer
 from ..database import get_db
-from ..models import Counter, Message, Subscriber, Track
+from ..models import Counter, Message, PlatformStat, Subscriber, Track
 from ..security import client_ip, rate_limited
 
 router = APIRouter()
@@ -47,7 +47,12 @@ def song(slug: str, db: Session = Depends(get_db)):
 @router.get("/api/site")
 def site(db: Session = Depends(get_db)):
     wa = f"https://wa.me/{config.WHATSAPP_NUMBER}?text=" + quote("Hi Zimbermanne, I'd like to book you.") if config.WHATSAPP_NUMBER else None
-    return {"whatsappUrl": wa, "views": _views(db)}
+    stats = {r.key: r.value for r in db.scalars(select(PlatformStat))}
+    return {
+        "whatsappUrl": wa, "views": _views(db), "stats": stats,
+        "spotifyArtistId": config.SPOTIFY_ARTIST_ID, "soundcloudUrl": config.SOUNDCLOUD_PROFILE_URL,
+        "sunoUrl": f"https://suno.com/@{config.SUNO_HANDLE}",
+    }
 
 
 @router.post("/api/visit")
@@ -103,10 +108,10 @@ def subscribe(body: SubscribeIn, request: Request, tasks: BackgroundTasks, db: S
     if not EMAIL.match(email):
         return _reply(False, "Please enter a valid email address.", 422)
     sub = db.scalar(select(Subscriber).where(Subscriber.email == email))
-    if sub and sub.active:
+    if sub and sub.unsubscribed_at is None:
         return _reply(True, "You're already on the list.")
     if sub:
-        sub.active, sub.unsubscribed_at = True, None
+        sub.unsubscribed_at = None
     else:
         sub = Subscriber(email=email)
         db.add(sub)
@@ -127,7 +132,7 @@ def unsubscribe(token: str, db: Session = Depends(get_db)):
     sub = db.scalar(select(Subscriber).where(Subscriber.token == token))
     if not sub:
         return _reply(False, "This link is not valid.", 404)
-    sub.active, sub.unsubscribed_at = False, datetime.now(timezone.utc)
+    sub.unsubscribed_at = datetime.now(timezone.utc)
     db.commit()
     return _reply(True, "You have been removed from the list.")
 

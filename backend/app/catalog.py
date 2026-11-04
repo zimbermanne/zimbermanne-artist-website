@@ -3,7 +3,7 @@ import json
 import re
 import unicodedata
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import Session
 
 from . import config
@@ -43,6 +43,12 @@ def track_out(t: Track) -> dict:
         d["audioUrl"] = t.audio_url
     if t.image:
         d["image"] = t.image
+    if t.spotify_url:
+        d["spotifyUrl"] = t.spotify_url
+    if t.soundcloud_url:
+        d["soundcloudUrl"] = t.soundcloud_url
+    plays = {"suno": t.suno_plays, "soundcloud": t.soundcloud_plays}
+    d["plays"] = {k: v for k, v in plays.items() if v}
     return d
 
 
@@ -50,17 +56,36 @@ def album_out(a: Album, with_tracks: bool = True) -> dict:
     d = {
         "id": a.key, "dbId": a.id, "number": a.number, "title": a.title, "tagline": a.tagline,
         "description": a.description, "cover": a.cover, "chips": a.chips,
+        "spotifyUrl": a.spotify_url, "soundcloudUrl": a.soundcloud_url,
     }
     if with_tracks:
         d["tracks"] = [track_out(t) for t in a.tracks]
     return d
 
 
+def _legacy_catalog(db: Session):
+    """The first version of the site kept its albums as one JSON blob in a `catalog` table. Prefer it: it
+    holds everything the old Suno sync added since music.json was last committed."""
+    try:
+        row = db.execute(text("SELECT data FROM catalog WHERE id = 1")).first()
+        data = json.loads(row[0]) if row else None
+    except Exception:
+        db.rollback()  # no such table (fresh database)
+        return None
+    if isinstance(data, list):
+        data = {"albums": data}
+    return data if isinstance(data, dict) and data.get("albums") else None
+
+
 def seed_catalog(db: Session) -> int:
-    """Import music.json once, when the albums table is empty. Returns number of tracks added."""
-    if db.scalar(select(Album).limit(1)) or not config.MUSIC_SEED.exists():
+    """Fill an empty albums table from the old `catalog` table, else from music.json. Returns songs added."""
+    if db.scalar(select(Album).limit(1)):
         return 0
-    data = json.loads(config.MUSIC_SEED.read_text(encoding="utf-8"))
+    data = _legacy_catalog(db)
+    if data is None:
+        if not config.MUSIC_SEED.exists():
+            return 0
+        data = json.loads(config.MUSIC_SEED.read_text(encoding="utf-8"))
     added = 0
     for ai, a in enumerate(data.get("albums", [])):
         album = Album(

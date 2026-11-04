@@ -3,6 +3,7 @@ import secrets
 from datetime import datetime, timezone
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
@@ -31,6 +32,10 @@ class Album(Base):
     cover: Mapped[str] = mapped_column(String(600), default="")
     chips_json: Mapped[str] = mapped_column(Text, default="[]")
     position: Mapped[int] = mapped_column(Integer, default=0)
+    suno_album_id: Mapped[str] = mapped_column(String(60), default="")
+    spotify_album_id: Mapped[str] = mapped_column(String(60), default="")
+    spotify_url: Mapped[str] = mapped_column(String(600), default="")
+    soundcloud_url: Mapped[str] = mapped_column(String(600), default="")
     tracks: Mapped[list["Track"]] = relationship(
         back_populates="album", cascade="all, delete-orphan", order_by="Track.position"
     )
@@ -60,6 +65,10 @@ class Track(Base):
     duration: Mapped[str] = mapped_column(String(20), default="")
     lyrics: Mapped[str] = mapped_column(Text, default="")
     position: Mapped[int] = mapped_column(Integer, default=0)
+    spotify_url: Mapped[str] = mapped_column(String(600), default="")
+    soundcloud_url: Mapped[str] = mapped_column(String(600), default="")
+    suno_plays: Mapped[int] = mapped_column(Integer, default=0)
+    soundcloud_plays: Mapped[int] = mapped_column(Integer, default=0)
     album: Mapped[Album] = relationship(back_populates="tracks")
 
 
@@ -68,7 +77,9 @@ class Message(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(120))
     email: Mapped[str] = mapped_column(String(254))
-    body: Mapped[str] = mapped_column(Text)
+    # Same column names as the first version of the site, so existing rows keep working.
+    body: Mapped[str] = mapped_column("message", Text)
+    emailed: Mapped[bool] = mapped_column(Boolean, default=False)
     is_read: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
@@ -78,12 +89,38 @@ class Subscriber(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(254), unique=True, index=True)
     token: Mapped[str] = mapped_column(String(64), unique=True, default=lambda: secrets.token_urlsafe(24))
-    active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     unsubscribed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    @hybrid_property
+    def active(self) -> bool:  # active = has not unsubscribed (same rule as the first version)
+        return self.unsubscribed_at is None
+
+    @active.expression
+    def active(cls):
+        return cls.unsubscribed_at.is_(None)
 
 
 class Counter(Base):
     __tablename__ = "counters"
     name: Mapped[str] = mapped_column(String(40), primary_key=True)
     value: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class PlatformStat(Base):
+    """One number per key, e.g. suno_plays. `source` is "auto" (set by a sync) or "manual" (typed in the admin)."""
+    __tablename__ = "platform_stats"
+    key: Mapped[str] = mapped_column(String(60), primary_key=True)
+    value: Mapped[int] = mapped_column(Integer, default=0)
+    source: Mapped[str] = mapped_column(String(10), default="auto")
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+
+
+class SyncRun(Base):
+    __tablename__ = "sync_runs"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    source: Mapped[str] = mapped_column(String(20), index=True)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
+    ok: Mapped[bool] = mapped_column(Boolean, default=False)
+    summary: Mapped[str] = mapped_column(String(300), default="")
+    log: Mapped[str] = mapped_column(Text, default="")
