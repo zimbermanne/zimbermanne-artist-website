@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { NavLink, Navigate, Outlet, useNavigate } from "react-router-dom";
 import * as api from "./api";
 import { useAuth } from "./auth";
-import { fmtDate, useTitle } from "./utils";
+import { fmtCount, fmtDate, useTitle } from "./utils";
 
 /* ---------- small helpers ---------- */
 function useLoad(fn) {
@@ -67,6 +67,7 @@ export function AdminLayout() {
         <nav>
           <NavLink end to="/admin" className={link}>Overview</NavLink>
           <NavLink to="/admin/catalog" className={link}>Albums &amp; songs</NavLink>
+          <NavLink to="/admin/sync" className={link}>Sync</NavLink>
           <NavLink to="/admin/inbox" className={link}>Inbox</NavLink>
           <NavLink to="/admin/fans" className={link}>Fan list</NavLink>
           <NavLink to="/admin/account" className={link}>Account</NavLink>
@@ -299,6 +300,96 @@ export function Account() {
         <Field label="New password (10+ characters)"><input type="password" autoComplete="new-password" required minLength={10} value={next} onChange={(e) => setNext(e.target.value)} /></Field>
         <button className="btn" type="submit">Change password</button>
       </form>
+    </>
+  );
+}
+
+/* ---------- platform sync ---------- */
+const SOURCE_INFO = {
+  suno: { title: "Suno", gives: "songs, albums, artwork, plays", setup: "No keys needed. Reads your public Suno profile." },
+  spotify: { title: "Spotify", gives: "Spotify links and cover art for matching songs", setup: "Add SPOTIFY_CLIENT_ID and SPOTIFY_CLIENT_SECRET in Railway (the app owner needs Spotify Premium)." },
+  soundcloud: { title: "SoundCloud", gives: "plays, followers, links, artwork", setup: "Add SOUNDCLOUD_CLIENT_ID and SOUNDCLOUD_CLIENT_SECRET in Railway (needs SoundCloud Artist Pro to register an app)." },
+};
+const STAT_LABELS = {
+  suno_plays: "Suno plays", suno_songs: "Songs on Suno", suno_followers: "Suno followers",
+  soundcloud_plays: "SoundCloud plays", soundcloud_followers: "SoundCloud followers",
+  spotify_followers: "Spotify followers", spotify_monthly_listeners: "Spotify monthly listeners",
+};
+
+function ManualStat({ k, stat, onSaved }) {
+  const [v, setV] = useState(stat ? String(stat.value) : "");
+  const [err, setErr] = useState("");
+  async function save(value) {
+    setErr("");
+    try { await api.setPlatformStat(k, value); await onSaved(); } catch (e) { setErr(e.message); }
+  }
+  return (
+    <div className="adm-row">
+      <div className="adm-grow">{STAT_LABELS[k]}<div className="adm-muted">{stat ? `${stat.source === "manual" ? "typed by you" : "from sync"} · ${fmtDate(stat.updatedAt)}` : "not set"}</div></div>
+      <input className="adm-num" inputMode="numeric" value={v} onChange={(e) => setV(e.target.value.replace(/\D/g, ""))} placeholder="0" aria-label={STAT_LABELS[k]} />
+      <button className="adm-link" type="button" disabled={v === ""} onClick={() => save(parseInt(v, 10))}>Save</button>
+      {stat?.source === "manual" && <button className="adm-link" type="button" onClick={() => { setV(""); save(null); }}>Use sync</button>}
+      {err && <span className="adm-muted" style={{ color: "#d0645a" }}>{err}</span>}
+    </div>
+  );
+}
+
+export function Sync() {
+  const [d, reload, error] = useLoad(api.adminSync);
+  const [busy, setBusy] = useState("");
+  const [result, setResult] = useState({});
+
+  async function run(name) {
+    setBusy(name);
+    try { const res = await api.runSync(name); setResult((r) => ({ ...r, [name]: res })); }
+    catch (e) { setResult((r) => ({ ...r, [name]: { ok: false, summary: e.message, log: "" } })); }
+    await reload();
+    setBusy("");
+  }
+
+  return (
+    <>
+      <h1 className="adm-h">Sync</h1>
+      <p className="adm-muted">Pulls songs, artwork and play counts from your platforms{d?.intervalHours ? ` every ${d.intervalHours} hours` : ""}. Titles, lyrics and anything you edited are never overwritten.</p>
+      {error && <div className="form-status error">{error}</div>}
+      {d?.sources.map((s) => {
+        const info = SOURCE_INFO[s.name];
+        const shown = result[s.name] || s.last;
+        return (
+          <div className="adm-card" key={s.name}>
+            <div className="adm-row">
+              <div className="adm-grow">
+                <b>{info.title}</b> <span className="adm-muted">· {info.gives}</span>
+                {!s.configured && <div className="adm-muted">Not set up. {info.setup}</div>}
+              </div>
+              <button className="btn btn-secondary" type="button" disabled={!s.configured || busy === s.name} onClick={() => run(s.name)}>
+                {busy === s.name ? "Syncing…" : "Run now"}
+              </button>
+            </div>
+            {shown && (
+              <details className="adm-log">
+                <summary className={shown.ok ? "" : "bad"}>
+                  {shown.ok ? "✓" : "✕"} {shown.summary}{shown.at ? ` · ${fmtDate(shown.at)}` : ""}
+                </summary>
+                <pre>{shown.log || "No details."}</pre>
+              </details>
+            )}
+          </div>
+        );
+      })}
+
+      <h2 className="adm-h" style={{ fontSize: 20, marginTop: 28 }}>Numbers shown on the site</h2>
+      <p className="adm-muted">Spotify does not share monthly listeners with apps. Copy the number from Spotify for Artists and type it here.</p>
+      <div className="adm-card">
+        {d && ["spotify_monthly_listeners", "spotify_followers", "suno_plays", "soundcloud_plays"].map((k) => (
+          <ManualStat key={k + (d.stats[k]?.updatedAt || "")} k={k} stat={d.stats[k]} onSaved={reload} />
+        ))}
+      </div>
+      {d && (
+        <p className="adm-muted">
+          Also tracked: {["suno_songs", "suno_followers", "soundcloud_followers"].filter((k) => d.stats[k]).map((k) => `${STAT_LABELS[k]} ${fmtCount(d.stats[k].value)}`).join(" · ") || "nothing yet, run a sync"}
+        </p>
+      )}
     </>
   );
 }

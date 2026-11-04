@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { getSong, unsubscribe, unsubscribeInfo } from "./api";
-import { ContactForm, Discography, FormStatus, SubscribeForm } from "./components";
+import { ContactForm, Discography, FormStatus, ListenEverywhere, ListenerStats, SubscribeForm } from "./components";
 import { DownloadButton, usePlayer } from "./player";
-import { coverOf, SUNO_PROFILE, useTitle } from "./utils";
+import { coverOf, fmtCount, SUNO_PROFILE, useTitle } from "./utils";
 
-export function Home({ albums, failed, whatsappUrl }) {
+const playsTotal = (t) => Object.values(t.plays || {}).reduce((a, b) => a + b, 0);
+
+export function Home({ albums, failed, site }) {
   useTitle("Zimbermanne — Afro Soul Pop Artist | Official Website");
   return (
     <>
@@ -19,6 +21,8 @@ export function Home({ albums, failed, whatsappUrl }) {
           <a className="btn btn-secondary" href={SUNO_PROFILE} target="_blank" rel="noopener noreferrer">Listen on Suno ↗</a>
         </div>
       </header>
+
+      <ListenerStats stats={site.stats} />
 
       <section id="about">
         <div className="about">
@@ -44,8 +48,9 @@ export function Home({ albums, failed, whatsappUrl }) {
       </section>
 
       <Discography albums={albums} failed={failed} />
+      <ListenEverywhere site={site} />
       <SubscribeForm />
-      <ContactForm whatsappUrl={whatsappUrl} />
+      <ContactForm whatsappUrl={site.whatsappUrl} />
     </>
   );
 }
@@ -98,10 +103,12 @@ export function SongPage() {
         <div className="tag">{album.number} · {album.title}</div>
         <h1>{track.title}</h1>
         {track.subtitle && <div className="album-tagline">{track.subtitle}</div>}
-        <div className="song-meta">Zimbermanne · {album.tagline}{track.duration ? ` · ${track.duration}` : ""}</div>
+        <div className="song-meta">Zimbermanne · {album.tagline}{track.duration ? ` · ${track.duration}` : ""}{playsTotal(track) ? ` · ${fmtCount(playsTotal(track))} plays` : ""}</div>
         <div className="song-actions">
           <button className="btn" type="button" onClick={() => play(item)}>{isPlaying ? "Pause" : "Play"}</button>
           {track.url && <a className="btn btn-secondary" href={track.url} target="_blank" rel="noopener noreferrer">Stream on Suno ↗</a>}
+          {track.spotifyUrl && <a className="btn btn-secondary" href={track.spotifyUrl} target="_blank" rel="noopener noreferrer">Spotify ↗</a>}
+          {track.soundcloudUrl && <a className="btn btn-secondary" href={track.soundcloudUrl} target="_blank" rel="noopener noreferrer">SoundCloud ↗</a>}
           <DownloadButton track={track} className="btn btn-secondary">Download MP3</DownloadButton>
           <button className="btn btn-secondary" type="button" onClick={share}>{copied ? "Link copied ✓" : "Share"}</button>
         </div>

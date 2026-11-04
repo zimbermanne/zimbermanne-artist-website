@@ -13,6 +13,19 @@ In production one Railway service builds both (see `Dockerfile`) and FastAPI ser
 
 On first start the database is filled from `backend/music.json`. After that you manage music in `/admin`.
 
+## Platform sync (Admin > Sync)
+Runs every `SYNC_INTERVAL_HOURS` (default 12) and on "Run now". It only fills in and adds; titles, lyrics and
+anything you edited are never overwritten, and songs are matched by Suno ID or exact title.
+
+| Source | Needs | Gives |
+|---|---|---|
+| Suno | nothing (public profile + album pages) | songs, albums, artwork, plays |
+| Spotify | `SPOTIFY_CLIENT_ID` / `SECRET` (app owner needs Premium) | Spotify links + cover art for matching songs |
+| SoundCloud | `SOUNDCLOUD_CLIENT_ID` / `SECRET` (Artist Pro to register an app) | plays, followers, links, artwork |
+
+Spotify no longer returns followers/popularity to apps and never returned monthly listeners: type that
+number in Admin > Sync. Suno shows plays, not "listeners". New database columns are added automatically on start.
+
 ## Run locally
 ```
 # terminal 1: API on :8000

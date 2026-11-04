@@ -45,3 +45,8 @@
   .adm-side nav { flex-direction: row; flex-wrap: wrap; }
   .adm-side-foot { margin-top: 0; flex-direction: row; flex-wrap: wrap; align-items: center; }
 }
+.adm-num { width: 130px; padding: 8px 10px; background: var(--bg); border: 1px solid var(--line); color: var(--text); border-radius: 6px; font: inherit; }
+.adm-log { margin-top: 10px; font-size: 13px; }
+.adm-log summary { cursor: pointer; color: var(--muted); }
+.adm-log summary.bad { color: #d0645a; }
+.adm-log pre { white-space: pre-wrap; word-break: break-word; background: var(--bg); border: 1px solid var(--line); border-radius: 6px; padding: 10px; max-height: 260px; overflow: auto; color: var(--text); }

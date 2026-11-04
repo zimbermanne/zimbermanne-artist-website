@@ -20,3 +20,14 @@ footer .footer-views { display: block; }
   .player-bar { background: rgba(255, 255, 255, .96); }
   @media (max-width: 768px) { .player-bar.expanded { background: rgba(250, 247, 241, .99); } }
 }
+
+/* ---- listener numbers, platform players ---- */
+.listener-stats { display: flex; justify-content: center; gap: clamp(24px, 6vw, 72px); flex-wrap: wrap; padding: 28px 6vw; border-block: 1px solid var(--line); background: var(--bg-alt); }
+.listener-stats div { text-align: center; }
+.listener-stats b { display: block; font: 700 clamp(28px, 5vw, 40px)/1.1 'Playfair Display', serif; color: var(--gold); }
+.listener-stats span { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.listen { padding: 80px 6vw; max-width: 1200px; margin: 0 auto; }
+.listen h2 { text-align: center; margin-bottom: 32px; }
+.listen-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+.listen-grid iframe { border: 0; background: var(--panel); min-height: 352px; }
+.track-plays { display: block; font-size: 11px; color: var(--muted); letter-spacing: .04em; margin-top: 2px; }
