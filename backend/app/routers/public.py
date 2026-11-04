@@ -108,10 +108,10 @@ def subscribe(body: SubscribeIn, request: Request, tasks: BackgroundTasks, db: S
     if not EMAIL.match(email):
         return _reply(False, "Please enter a valid email address.", 422)
     sub = db.scalar(select(Subscriber).where(Subscriber.email == email))
-    if sub and sub.active:
+    if sub and sub.unsubscribed_at is None:
         return _reply(True, "You're already on the list.")
     if sub:
-        sub.active, sub.unsubscribed_at = True, None
+        sub.unsubscribed_at = None
     else:
         sub = Subscriber(email=email)
         db.add(sub)
@@ -132,7 +132,7 @@ def unsubscribe(token: str, db: Session = Depends(get_db)):
     sub = db.scalar(select(Subscriber).where(Subscriber.token == token))
     if not sub:
         return _reply(False, "This link is not valid.", 404)
-    sub.active, sub.unsubscribed_at = False, datetime.now(timezone.utc)
+    sub.unsubscribed_at = datetime.now(timezone.utc)
     db.commit()
     return _reply(True, "You have been removed from the list.")
 

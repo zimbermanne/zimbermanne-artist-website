@@ -62,7 +62,7 @@ def stats(db: Session = Depends(get_db)):
         "views": (views.value if views else 0) * config.VIEW_MULTIPLIER,
         "albums": count(select(func.count(Album.id))),
         "tracks": count(select(func.count(Track.id))),
-        "subscribers": count(select(func.count(Subscriber.id)).where(Subscriber.active.is_(True))),
+        "subscribers": count(select(func.count(Subscriber.id)).where(Subscriber.active)),
         "messages": count(select(func.count(Message.id))),
         "unread": count(select(func.count(Message.id)).where(Message.is_read.is_(False))),
     }
@@ -180,7 +180,7 @@ def subscribers(db: Session = Depends(get_db)):
 def subscribers_csv(all: bool = False, db: Session = Depends(get_db)):
     q = select(Subscriber).order_by(Subscriber.created_at)
     if not all:
-        q = q.where(Subscriber.active.is_(True))
+        q = q.where(Subscriber.active)
     out = io.StringIO()
     w = csv.writer(out)
     w.writerow(["email", "active", "subscribed_at"])

@@ -3,6 +3,7 @@ import secrets
 from datetime import datetime, timezone
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .database import Base
@@ -76,7 +77,9 @@ class Message(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str] = mapped_column(String(120))
     email: Mapped[str] = mapped_column(String(254))
-    body: Mapped[str] = mapped_column(Text)
+    # Same column names as the first version of the site, so existing rows keep working.
+    body: Mapped[str] = mapped_column("message", Text)
+    emailed: Mapped[bool] = mapped_column(Boolean, default=False)
     is_read: Mapped[bool] = mapped_column(Boolean, default=False)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
@@ -86,9 +89,16 @@ class Subscriber(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     email: Mapped[str] = mapped_column(String(254), unique=True, index=True)
     token: Mapped[str] = mapped_column(String(64), unique=True, default=lambda: secrets.token_urlsafe(24))
-    active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
     unsubscribed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    @hybrid_property
+    def active(self) -> bool:  # active = has not unsubscribed (same rule as the first version)
+        return self.unsubscribed_at is None
+
+    @active.expression
+    def active(cls):
+        return cls.unsubscribed_at.is_(None)
 
 
 class Counter(Base):
