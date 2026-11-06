@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { sendContact, subscribe } from "./api";
 import { DownloadButton, IconPause, IconPlay, usePlayer } from "./player";
+import { AlbumShowcase, useShowcaseSupported } from "./showcase";
 import { fmtCount, SUNO_PROFILE } from "./utils";
 
 /* ---- layout ---- */
@@ -76,14 +77,31 @@ function Album({ album, index }) {
 }
 
 export function Discography({ albums, failed }) {
+  const canShowcase = useShowcaseSupported();
+  const [view, setView] = useState(() => {
+    try { return localStorage.getItem("albumView") || "showcase"; } catch (e) { return "showcase"; }
+  });
+  const choose = (v) => {
+    setView(v);
+    try { localStorage.setItem("albumView", v); } catch (e) { /* private mode */ }
+  };
+  const showcase = canShowcase && view === "showcase";
   return (
     <section id="albums">
       <div className="album-header-bar">
         <h2><small>Discography</small>Featured Albums</h2>
-        <a href={SUNO_PROFILE} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: "10px 20px", fontSize: 11 }}>View All on Suno ↗</a>
+        <div className="album-header-actions">
+          {canShowcase && (
+            <div className="view-toggle" role="group" aria-label="Album display">
+              <button type="button" aria-pressed={showcase} onClick={() => choose("showcase")}>Showcase</button>
+              <button type="button" aria-pressed={!showcase} onClick={() => choose("list")}>List</button>
+            </div>
+          )}
+          <a href={SUNO_PROFILE} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: "10px 20px", fontSize: 11 }}>View All on Suno ↗</a>
+        </div>
       </div>
       <div id="albumsContainer">
-        {albums.map((a, i) => <Album key={a.id} album={a} index={i} />)}
+        {albums.map((a, i) => (showcase ? <AlbumShowcase key={a.id} album={a} /> : <Album key={a.id} album={a} index={i} />))}
         {!albums.length && <p className="loading-note">{failed ? "The albums could not be loaded. Please refresh the page." : "Loading the music…"}</p>}
       </div>
     </section>
