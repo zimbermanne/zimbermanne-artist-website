@@ -148,7 +148,8 @@ const SOCIALS = [
   ["Spotify", "https://open.spotify.com/search/zimbermanne", "@zimbermanne"],
   ["Deezer", "https://www.deezer.com/search/zimbermanne", "@zimbermanne"],
   ["Instagram", "https://www.instagram.com/zimbermanne", "@zimbermanne"],
-  ["TikTok", "https://www.tiktok.com/@zimbermanne", "@zimbermanne"],
+  ["TikTok", "https://www.tiktok.com/zimbermannesuperstar", "zimbermannesuperstar"],
+  ["YouTube", "https://www.youtube.com/@zimbermannelite", "@zimbermannelite"],
   ["Facebook", "https://www.facebook.com/zimbermanne", "@zimbermanne"],
   ["SoundCloud", "https://soundcloud.com/zimbermann-elit", "zimbermann-elit"],
 ];
@@ -184,7 +185,7 @@ export function ContactForm({ whatsappUrl }) {
       {whatsappUrl && <p className="whatsapp-wrap"><a className="btn btn-whatsapp" href={whatsappUrl} target="_blank" rel="noopener noreferrer">Book on WhatsApp</a></p>}
       <div className="social">
         {SOCIALS.map(([n, href, handle]) => <a key={n} href={href} target="_blank" rel="noopener noreferrer">{n}<span>{handle}</span></a>)}
-        <a href={SUNO_PROFILE} target="_blank" rel="noopener noreferrer" style={{ borderColor: "var(--gold)", color: "var(--gold)" }}>Suno AI<span>@zimbermannelit</span></a>
+        <a href={SUNO_PROFILE} target="_blank" rel="noopener noreferrer" style={{ borderColor: "var(--gold)", color: "var(--gold)" }}>Suno AI<span>@zimbermanne</span></a>
       </div>
     </section>
   );

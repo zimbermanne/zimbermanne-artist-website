@@ -10,7 +10,7 @@ from app.models import Album, PlatformStat, Track
 from app.sync import soundcloud, spotify, suno
 from app.sync.common import Report, SyncError
 
-H = "zimbermannelit"
+H = "zimbermanne"
 A, B, C = ("11111111-1111-1111-1111-111111111111", "22222222-2222-2222-2222-222222222222", "33333333-3333-3333-3333-333333333333")
 ALB = "99999999-9999-9999-9999-999999999999"
 IMG = "https://cdn2.suno.ai/img.jpeg"

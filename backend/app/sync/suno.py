@@ -21,6 +21,7 @@ CLIP_RE = re.compile(r'"id":"([0-9a-f-]{36})"[^}]*?"title":"([^"]+)"')
 ID_RE = re.compile(r'"id":"[0-9a-f-]{36}"')
 HANDLE_RE = re.compile(r'"handle":"([^"]+)"')
 ALBUM_RE = re.compile(r"/album/([0-9a-f]{8}-[0-9a-f-]{27})", re.I)
+PLAYLIST_RE = re.compile(r"/playlist/([0-9a-f]{8}-[0-9a-f-]{27})", re.I)
 IMAGE_KEYS = ("image_large_url", "imageLargeUrl", "image_url", "imageUrl")
 IMAGE_HOST_RE = re.compile(r"^https://([a-z0-9-]+\.)*suno\.(ai|com)/", re.I)
 USER_AGENTS = ("Mozilla/5.0 (compatible; zimbermanne-sync/3.0)", "Twitterbot/1.0")
@@ -102,6 +103,14 @@ def parse_album_ids(html: str) -> list[str]:
     return seen
 
 
+def parse_playlist_ids(html: str) -> list[str]:
+    seen: list[str] = []
+    for m in PLAYLIST_RE.finditer(html):
+        if m[1].lower() not in seen:
+            seen.append(m[1].lower())
+    return seen
+
+
 def parse_followers(html: str) -> int:
     return _number(html.replace('\\"', '"'), "follower_count", "num_followers", "followers_count")
 
@@ -134,6 +143,16 @@ def fetch_album(client: httpx.Client, album_id: str) -> dict | None:
     return {"id": album_id, **meta, "clips": parse_clips(html, config.SUNO_HANDLE)}
 
 
+def fetch_playlist(client: httpx.Client, playlist_id: str) -> dict | None:
+    """Playlist pages list every song to a plain request (profile and album pages often do not).
+    Songs are not filtered by owner: a playlist you built may hold songs from other accounts."""
+    time.sleep(0.3)
+    html = _get(client, f"https://suno.com/playlist/{playlist_id}")
+    if not html:
+        return None
+    return {"id": playlist_id, "clips": parse_clips(html, config.SUNO_HANDLE)}
+
+
 def fetch_song_image(client: httpx.Client, sid: str) -> str | None:
     time.sleep(0.3)
     html = _get(client, f"https://suno.com/song/{sid}")
@@ -163,15 +182,16 @@ def _add_track(db: Session, album: Album, clip: dict, report: Report):
     report.change(f"added song {clip['title']!r} to {album.title!r}")
 
 
-def apply_suno(db: Session, profile_html: str, albums_data: list[dict], song_image, report: Report) -> dict:
+def apply_suno(db: Session, profile_html: str, albums_data: list[dict], song_image, report: Report,
+               playlists_data: list[dict] | None = None) -> dict:
     handle = config.SUNO_HANDLE
     clips = parse_clips(profile_html, handle)
-    for a in albums_data:  # songs only listed on an album page still count
+    for a in list(albums_data) + list(playlists_data or []):  # songs only listed on an album or playlist page still count
         for cid, c in a["clips"].items():
             clips.setdefault(cid, c)
     if not clips:
         raise SyncError("no songs found on the Suno profile (layout changed?)")
-    report.note(f"profile lists {len(clips)} songs and {len(albums_data)} albums")
+    report.note(f"profile lists {len(clips)} songs, {len(albums_data)} albums and {len(playlists_data or [])} playlists")
 
     tracks = all_tracks(db)
     known = {song_id(t.url): t for t in tracks if song_id(t.url)}
@@ -276,7 +296,8 @@ def run(db: Session, client: httpx.Client | None = None) -> Report:
     try:
         html = fetch_profile(client, config.SUNO_HANDLE)
         albums_data = [a for aid in parse_album_ids(html) if (a := fetch_album(client, aid))]
-        res = apply_suno(db, html, albums_data, lambda sid: fetch_song_image(client, sid), report)
+        playlists_data = [p for pid in parse_playlist_ids(html) if (p := fetch_playlist(client, pid))]
+        res = apply_suno(db, html, albums_data, lambda sid: fetch_song_image(client, sid), report, playlists_data)
         db.commit()
         report.note(f"done: {res['songs']} songs, {res['albums']} albums, {res['added']} added")
         return report

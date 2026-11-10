@@ -32,7 +32,7 @@ MUSIC_SEED = ROOT / "music.json"
 FRONTEND_DIST = Path(os.environ.get("FRONTEND_DIST") or ROOT.parent / "frontend" / "dist")
 
 # ---- platform sync ----
-SUNO_HANDLE = os.environ.get("SUNO_HANDLE", "zimbermannelit").lstrip("@")
+SUNO_HANDLE = os.environ.get("SUNO_HANDLE", "zimbermanne").lstrip("@")
 SPOTIFY_ARTIST_ID = os.environ.get("SPOTIFY_ARTIST_ID", "5Vu9W8pe9bnT644cJoo8YG")
 SPOTIFY_CLIENT_ID = os.environ.get("SPOTIFY_CLIENT_ID", "")
 SPOTIFY_CLIENT_SECRET = os.environ.get("SPOTIFY_CLIENT_SECRET", "")

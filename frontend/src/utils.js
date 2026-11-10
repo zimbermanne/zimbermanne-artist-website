@@ -2,7 +2,7 @@ import { useEffect } from "react";
 
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 
-export const SUNO_PROFILE = "https://suno.com/@zimbermannelit";
+export const SUNO_PROFILE = "https://suno.com/@zimbermanne";
 export const DEFAULT_SLUG = "pesa-inaongea-sana";
 
 export const coverOf = ({ track, album }) => track.image || album.cover;
