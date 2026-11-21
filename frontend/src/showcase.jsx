@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { IconPause, IconPlay, usePlayer } from "./player";
-import { fmtCount, SUNO_PROFILE } from "./utils";
+import { fmtCount, SPOTIFY_ARTIST_URL } from "./utils";
 
 // The hover showcase needs room and a mouse: wide screens only. Phones and tablets keep the album list.
 const QUERY = "(min-width: 1000px) and (hover: hover)";
@@ -91,7 +91,7 @@ export function AlbumShowcase({ album }) {
           <div className="ac-links">
             {tracks[0] && <button type="button" className="ac-btn" onClick={() => play(item(tracks[0]))}>Play the album</button>}
             {tracks[0] && <Link className="ac-btn" to={`/song/${tracks[0].slug}`}>Open first song</Link>}
-            <a className="ac-btn" href={SUNO_PROFILE} target="_blank" rel="noopener noreferrer">More on Suno ↗</a>
+            <a className="ac-btn" href={SPOTIFY_ARTIST_URL} target="_blank" rel="noopener noreferrer">More on Spotify ↗</a>
           </div>
         )}
       </div>

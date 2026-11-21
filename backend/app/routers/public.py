@@ -51,7 +51,6 @@ def site(db: Session = Depends(get_db)):
     return {
         "whatsappUrl": wa, "views": _views(db), "stats": stats,
         "spotifyArtistId": config.SPOTIFY_ARTIST_ID, "soundcloudUrl": config.SOUNDCLOUD_PROFILE_URL,
-        "sunoUrl": f"https://suno.com/@{config.SUNO_HANDLE}",
     }
 
 

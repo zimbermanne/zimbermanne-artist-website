@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { getSong, unsubscribe, unsubscribeInfo } from "./api";
 import { ContactForm, Discography, FormStatus, ListenEverywhere, ListenerStats, SubscribeForm } from "./components";
 import { DownloadButton, usePlayer } from "./player";
-import { coverOf, fmtCount, langLabel, SUNO_PROFILE, useTitle } from "./utils";
+import { coverOf, fmtCount, langLabel, listenLink, SPOTIFY_ARTIST_URL, useTitle } from "./utils";
 
 const playsTotal = (t) => Object.values(t.plays || {}).reduce((a, b) => a + b, 0);
 
@@ -18,7 +18,7 @@ export function Home({ albums, failed, site }) {
         <p>Music that moves between the warmth of a city night and the cold drama of a winter story, always led by the soul.</p>
         <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap" }}>
           <Link className="btn" to="/#albums">Explore Discography</Link>
-          <a className="btn btn-secondary" href={SUNO_PROFILE} target="_blank" rel="noopener noreferrer">Listen on Suno ↗</a>
+          <a className="btn btn-secondary" href={SPOTIFY_ARTIST_URL} target="_blank" rel="noopener noreferrer">Listen on Spotify ↗</a>
         </div>
       </header>
 
@@ -106,7 +106,7 @@ export function SongPage() {
         <div className="song-meta">Zimbermanne · {album.tagline}{track.language ? ` · ${langLabel(track.language)}` : ""}{track.duration ? ` · ${track.duration}` : ""}{playsTotal(track) ? ` · ${fmtCount(playsTotal(track))} plays` : ""}</div>
         <div className="song-actions">
           <button className="btn" type="button" onClick={() => play(item)}>{isPlaying ? "Pause" : "Play"}</button>
-          {track.url && <a className="btn btn-secondary" href={track.url} target="_blank" rel="noopener noreferrer">Stream on Suno ↗</a>}
+          <a className="btn btn-secondary" href={listenLink(track).href} target="_blank" rel="noopener noreferrer">{listenLink(track).label} ↗</a>
           {track.spotifyUrl && <a className="btn btn-secondary" href={track.spotifyUrl} target="_blank" rel="noopener noreferrer">Spotify ↗</a>}
           {track.soundcloudUrl && <a className="btn btn-secondary" href={track.soundcloudUrl} target="_blank" rel="noopener noreferrer">SoundCloud ↗</a>}
           <DownloadButton track={track} className="btn btn-secondary">Download MP3</DownloadButton>

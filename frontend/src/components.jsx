@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { sendContact, subscribe } from "./api";
 import { DownloadButton, IconPause, IconPlay, usePlayer } from "./player";
 import { AlbumShowcase, useShowcaseSupported } from "./showcase";
-import { fmtCount, LANGUAGES, langLabel, SUNO_PROFILE } from "./utils";
+import { fmtCount, LANGUAGES, langLabel, SPOTIFY_ARTIST_URL } from "./utils";
 
 /* ---- layout ---- */
 export function Nav({ home, views }) {
@@ -108,7 +108,7 @@ export function Discography({ albums, failed }) {
               <button type="button" aria-pressed={!showcase} onClick={() => choose("list")}>List</button>
             </div>
           )}
-          <a href={SUNO_PROFILE} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: "10px 20px", fontSize: 11 }}>View All on Suno ↗</a>
+          <a href={SPOTIFY_ARTIST_URL} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: "10px 20px", fontSize: 11 }}>Listen on Spotify ↗</a>
         </div>
       </div>
       {codes.length > 1 && (
@@ -206,7 +206,6 @@ export function ContactForm({ whatsappUrl }) {
       {whatsappUrl && <p className="whatsapp-wrap"><a className="btn btn-whatsapp" href={whatsappUrl} target="_blank" rel="noopener noreferrer">Book on WhatsApp</a></p>}
       <div className="social">
         {SOCIALS.map(([n, href, handle]) => <a key={n} href={href} target="_blank" rel="noopener noreferrer">{n}<span>{handle}</span></a>)}
-        <a href={SUNO_PROFILE} target="_blank" rel="noopener noreferrer" style={{ borderColor: "var(--gold)", color: "var(--gold)" }}>Suno AI<span>@zimbermanne</span></a>
       </div>
     </section>
   );

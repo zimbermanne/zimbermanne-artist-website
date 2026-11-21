@@ -2,7 +2,13 @@ import { useEffect } from "react";
 
 const UUID = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
 
-export const SUNO_PROFILE = "https://suno.com/@zimbermanne";
+// Where visitors are sent to listen. The site never links to, or names, the place the songs were made.
+export const SPOTIFY_ARTIST_URL = "https://open.spotify.com/artist/5Vu9W8pe9bnT644cJoo8YG";
+export function listenLink(track) {  // the best other-platform page for one song
+  if (track && track.spotifyUrl) return { href: track.spotifyUrl, label: "Listen on Spotify" };
+  if (track && track.soundcloudUrl) return { href: track.soundcloudUrl, label: "Listen on SoundCloud" };
+  return { href: SPOTIFY_ARTIST_URL, label: "Listen on Spotify" };
+}
 export const DEFAULT_SLUG = "pesa-inaongea-sana";
 
 export const coverOf = ({ track, album }) => track.image || album.cover;
