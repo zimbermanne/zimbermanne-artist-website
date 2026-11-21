@@ -6,7 +6,7 @@ from urllib.parse import quote
 from fastapi import APIRouter, BackgroundTasks, Depends, Request, Response
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.orm import Session
 
 from .. import audio, catalog, config, mailer
@@ -56,14 +56,13 @@ def site(db: Session = Depends(get_db)):
 
 
 @router.post("/api/visit")
-def visit(request: Request, response: Response, db: Session = Depends(get_db)):
-    """Counts one view per browser (cookie), ignoring bots."""
-    if not request.cookies.get("zv") and not BOTS.search(request.headers.get("user-agent", "")):
-        row = db.get(Counter, "views") or Counter(name="views", value=0)
-        row.value += 1
-        db.add(row)
+def visit(request: Request, db: Session = Depends(get_db)):
+    """Counts every page load, so a refresh counts too. Search-engine, preview and script clients are ignored."""
+    if not BOTS.search(request.headers.get("user-agent", "")):
+        done = db.execute(update(Counter).where(Counter.name == "views").values(value=Counter.value + 1))  # one atomic step
+        if done.rowcount == 0:
+            db.add(Counter(name="views", value=1))
         db.commit()
-        response.set_cookie("zv", "1", max_age=60 * 60 * 24 * 365, httponly=True, samesite="lax")
     return {"views": _views(db)}
 
 
