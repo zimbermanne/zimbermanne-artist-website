@@ -63,6 +63,7 @@ class Track(Base):
     audio_url: Mapped[str] = mapped_column(String(600), default="")
     image: Mapped[str] = mapped_column(String(600), default="")
     duration: Mapped[str] = mapped_column(String(20), default="")
+    language: Mapped[str] = mapped_column(String(10), default="")  # code from catalog.LANGUAGES, "" = not set
     lyrics: Mapped[str] = mapped_column(Text, default="")
     position: Mapped[int] = mapped_column(Integer, default=0)
     spotify_url: Mapped[str] = mapped_column(String(600), default="")

@@ -37,7 +37,15 @@ class TrackIn(BaseModel):
     image: str = ""
     duration: str = ""
     lyrics: str = ""
+    language: str | None = None  # None = leave as it is
     position: int | None = None
+
+
+def _language(code: str) -> str:
+    code = (code or "").strip()
+    if code and code not in catalog.LANGUAGES:
+        raise HTTPException(422, "Unknown language")
+    return code
 
 
 def _album(db: Session, album_id: int) -> Album:
@@ -114,7 +122,7 @@ def create_track(album_id: int, body: TrackIn, db: Session = Depends(get_db)):
     last = db.scalar(select(func.max(Track.position)).where(Track.album_id == a.id))
     t = Track(album_id=a.id, slug=catalog.unique_slug(db, body.title), title=body.title.strip(),
               subtitle=body.subtitle, url=body.url, audio_url=body.audioUrl, image=body.image,
-              duration=body.duration, lyrics=body.lyrics,
+              duration=body.duration, lyrics=body.lyrics, language=_language(body.language or ""),
               position=body.position if body.position is not None else (last if last is not None else -1) + 1)
     db.add(t)
     db.commit()
@@ -128,6 +136,8 @@ def update_track(track_id: int, body: TrackIn, db: Session = Depends(get_db)):
         t.slug = catalog.unique_slug(db, body.title, exclude_id=t.id)
     t.title, t.subtitle, t.url, t.audio_url = body.title.strip(), body.subtitle, body.url, body.audioUrl
     t.image, t.duration, t.lyrics = body.image, body.duration, body.lyrics
+    if body.language is not None:
+        t.language = _language(body.language)
     if body.position is not None:
         t.position = body.position
     db.commit()

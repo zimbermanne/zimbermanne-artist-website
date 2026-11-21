@@ -92,6 +92,7 @@ def parse_meta(html: str) -> dict:
     p = _Meta()
     p.feed(html)
     title = re.sub(r"\s*[|–-]\s*(Suno|Join me on Suno).*$", "", p.meta.get("og:title", ""), flags=re.I).strip()
+    title = re.sub(r"\s+by\s+@\S+$", "", title).strip()  # playlist and album pages say "<title> by @handle"
     return {"title": title, "image": suno_image(p.meta.get("og:image") or p.meta.get("twitter:image"))}
 
 
@@ -150,7 +151,7 @@ def fetch_playlist(client: httpx.Client, playlist_id: str) -> dict | None:
     html = _get(client, f"https://suno.com/playlist/{playlist_id}")
     if not html:
         return None
-    return {"id": playlist_id, "clips": parse_clips(html, config.SUNO_HANDLE)}
+    return {"id": playlist_id, "title": parse_meta(html)["title"], "clips": parse_clips(html, config.SUNO_HANDLE)}
 
 
 def fetch_song_image(client: httpx.Client, sid: str) -> str | None:
@@ -172,14 +173,14 @@ def _inbox(db: Session, first_image: str | None) -> Album:
     return a
 
 
-def _add_track(db: Session, album: Album, clip: dict, report: Report):
+def _add_track(db: Session, album: Album, clip: dict, report: Report, language: str = ""):
     last = max([t.position for t in album.tracks] or [-1])
     t = Track(album_id=album.id, slug=catalog.unique_slug(db, clip["title"]), title=clip["title"], url=clip["url"],
-              audio_url=clip["audioUrl"], image=clip.get("image") or "", suno_plays=clip.get("plays", 0), position=last + 1)
+              audio_url=clip["audioUrl"], image=clip.get("image") or "", suno_plays=clip.get("plays", 0), position=last + 1, language=language)
     db.add(t)
     db.flush()
     album.tracks.append(t)
-    report.change(f"added song {clip['title']!r} to {album.title!r}")
+    report.change(f"added song {clip['title']!r} to {album.title!r}" + (f" ({catalog.LANGUAGES[language]})" if language else ""))
 
 
 def apply_suno(db: Session, profile_html: str, albums_data: list[dict], song_image, report: Report,
@@ -193,6 +194,16 @@ def apply_suno(db: Session, profile_html: str, albums_data: list[dict], song_ima
         raise SyncError("no songs found on the Suno profile (layout changed?)")
     report.note(f"profile lists {len(clips)} songs, {len(albums_data)} albums and {len(playlists_data or [])} playlists")
 
+    # A playlist or album named after a language ("Series - Español") tags every song in it.
+    clip_lang: dict[str, str] = {}
+    for src in list(albums_data) + list(playlists_data or []):
+        code = catalog.detect_language(src.get("title", ""))
+        for cid in (src["clips"] if code else ()):
+            clip_lang.setdefault(cid, code)
+
+    def language_of(cid: str, title: str) -> str:
+        return clip_lang.get(cid) or catalog.detect_language(title)
+
     tracks = all_tracks(db)
     known = {song_id(t.url): t for t in tracks if song_id(t.url)}
     titles = by_title(tracks)
@@ -200,6 +211,9 @@ def apply_suno(db: Session, profile_html: str, albums_data: list[dict], song_ima
     # 1. refresh songs we already have, by Suno ID
     for sid, t in known.items():
         c = clips.get(sid)
+        if not t.language and (code := language_of(sid, t.title)):  # never overwrites a language set by hand
+            t.language = code
+            report.change(f"{t.title}: language set to {catalog.LANGUAGES[code]}")
         set_attr(t, "audio_url", audio_url(sid), report, t.title) if not t.audio_url else None
         if not c:
             continue
@@ -255,7 +269,7 @@ def apply_suno(db: Session, profile_html: str, albums_data: list[dict], song_ima
             if normalize(c["title"]) in titles:
                 alternates.append(c["title"])
             elif added < config.SYNC_MAX_NEW:
-                _add_track(db, album, c, report)
+                _add_track(db, album, c, report, language_of(cid, c["title"]))
                 known[cid] = album.tracks[-1]
                 titles.setdefault(normalize(c["title"]), []).append(album.tracks[-1])
                 added += 1
@@ -268,7 +282,7 @@ def apply_suno(db: Session, profile_html: str, albums_data: list[dict], song_ima
         if normalize(c["title"]) in titles:
             alternates.append(c["title"])
         elif added < config.SYNC_MAX_NEW:
-            _add_track(db, _inbox(db, c.get("image")), c, report)
+            _add_track(db, _inbox(db, c.get("image")), c, report, language_of(cid, c["title"]))
             known[cid] = True
             titles.setdefault(normalize(c["title"]), []).append(True)
             added += 1

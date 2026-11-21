@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { sendContact, subscribe } from "./api";
 import { DownloadButton, IconPause, IconPlay, usePlayer } from "./player";
 import { AlbumShowcase, useShowcaseSupported } from "./showcase";
-import { fmtCount, SUNO_PROFILE } from "./utils";
+import { fmtCount, LANGUAGES, langLabel, SUNO_PROFILE } from "./utils";
 
 /* ---- layout ---- */
 export function Nav({ home, views }) {
@@ -44,6 +44,7 @@ function TrackRow({ item }) {
       <div className="track-info">
         <Link className="track-title" to={`/song/${track.slug}`}>{track.title}</Link>
         {track.subtitle && <span className="track-subtitle">{track.subtitle}</span>}
+        {track.language && <span className="lang-badge" lang={track.language}>{langLabel(track.language)}</span>}
         {totalPlays(track) > 0 && <span className="track-plays">{fmtCount(totalPlays(track))} plays</span>}
       </div>
       <div className="track-actions">
@@ -86,6 +87,16 @@ export function Discography({ albums, failed }) {
     try { localStorage.setItem("albumView", v); } catch (e) { /* private mode */ }
   };
   const showcase = canShowcase && view === "showcase";
+
+  // language filter: shown only when the music really comes in two or more languages
+  const [lang, setLang] = useState("");
+  const counts = {};
+  albums.forEach((a) => a.tracks.forEach((t) => { if (t.language) counts[t.language] = (counts[t.language] || 0) + 1; }));
+  const codes = Object.keys(LANGUAGES).filter((c) => counts[c]);
+  const active = lang && counts[lang] ? lang : "";
+  const shown = active
+    ? albums.map((a) => ({ ...a, tracks: a.tracks.filter((t) => t.language === active) })).filter((a) => a.tracks.length)
+    : albums;
   return (
     <section id="albums">
       <div className="album-header-bar">
@@ -100,8 +111,18 @@ export function Discography({ albums, failed }) {
           <a href={SUNO_PROFILE} target="_blank" rel="noopener noreferrer" className="btn btn-secondary" style={{ padding: "10px 20px", fontSize: 11 }}>View All on Suno ↗</a>
         </div>
       </div>
+      {codes.length > 1 && (
+        <div className="lang-filter" role="group" aria-label="Filter the music by language">
+          <button type="button" aria-pressed={!active} onClick={() => setLang("")}>All</button>
+          {codes.map((c) => (
+            <button key={c} type="button" lang={c} aria-pressed={active === c} onClick={() => setLang(c)}>
+              {LANGUAGES[c]} <span>{counts[c]}</span>
+            </button>
+          ))}
+        </div>
+      )}
       <div id="albumsContainer">
-        {albums.map((a, i) => (showcase ? <AlbumShowcase key={a.id} album={a} /> : <Album key={a.id} album={a} index={i} />))}
+        {shown.map((a, i) => (showcase ? <AlbumShowcase key={`${a.id}-${active}`} album={a} /> : <Album key={`${a.id}-${active}`} album={a} index={i} />))}
         {!albums.length && <p className="loading-note">{failed ? "The albums could not be loaded. Please refresh the page." : "Loading the music…"}</p>}
       </div>
     </section>

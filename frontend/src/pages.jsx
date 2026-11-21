@@ -3,7 +3,7 @@ import { Link, useParams } from "react-router-dom";
 import { getSong, unsubscribe, unsubscribeInfo } from "./api";
 import { ContactForm, Discography, FormStatus, ListenEverywhere, ListenerStats, SubscribeForm } from "./components";
 import { DownloadButton, usePlayer } from "./player";
-import { coverOf, fmtCount, SUNO_PROFILE, useTitle } from "./utils";
+import { coverOf, fmtCount, langLabel, SUNO_PROFILE, useTitle } from "./utils";
 
 const playsTotal = (t) => Object.values(t.plays || {}).reduce((a, b) => a + b, 0);
 
@@ -103,7 +103,7 @@ export function SongPage() {
         <div className="tag">{album.number} · {album.title}</div>
         <h1>{track.title}</h1>
         {track.subtitle && <div className="album-tagline">{track.subtitle}</div>}
-        <div className="song-meta">Zimbermanne · {album.tagline}{track.duration ? ` · ${track.duration}` : ""}{playsTotal(track) ? ` · ${fmtCount(playsTotal(track))} plays` : ""}</div>
+        <div className="song-meta">Zimbermanne · {album.tagline}{track.language ? ` · ${langLabel(track.language)}` : ""}{track.duration ? ` · ${track.duration}` : ""}{playsTotal(track) ? ` · ${fmtCount(playsTotal(track))} plays` : ""}</div>
         <div className="song-actions">
           <button className="btn" type="button" onClick={() => play(item)}>{isPlaying ? "Pause" : "Play"}</button>
           {track.url && <a className="btn btn-secondary" href={track.url} target="_blank" rel="noopener noreferrer">Stream on Suno ↗</a>}

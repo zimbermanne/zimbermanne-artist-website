@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { NavLink, Navigate, Outlet, useNavigate } from "react-router-dom";
 import * as api from "./api";
 import { useAuth } from "./auth";
-import { fmtCount, fmtDate, useTitle } from "./utils";
+import { fmtCount, fmtDate, LANGUAGES, langLabel, useTitle } from "./utils";
 
 /* ---------- small helpers ---------- */
 function useLoad(fn) {
@@ -103,7 +103,7 @@ export function Dashboard() {
 
 /* ---------- albums & songs ---------- */
 const blankAlbum = { title: "", number: "", tagline: "", description: "", cover: "", chips: [] };
-const blankTrack = { title: "", subtitle: "", url: "", audioUrl: "", image: "", duration: "", lyrics: "" };
+const blankTrack = { title: "", subtitle: "", url: "", audioUrl: "", image: "", duration: "", language: "", lyrics: "" };
 
 function AlbumForm({ initial, onSave, onCancel }) {
   const [f, setF] = useState({ ...initial, chipsText: (initial.chips || []).join(", ") });
@@ -145,7 +145,7 @@ function TrackForm({ initial, onSave, onCancel }) {
   async function submit(e) {
     e.preventDefault();
     setBusy(true);
-    try { await onSave({ title: f.title, subtitle: f.subtitle, url: f.url, audioUrl: f.audioUrl, image: f.image, duration: f.duration, lyrics: f.lyrics }); }
+    try { await onSave({ title: f.title, subtitle: f.subtitle, url: f.url, audioUrl: f.audioUrl, image: f.image, duration: f.duration, language: f.language || "", lyrics: f.lyrics }); }
     catch (x) { setErr(x.message); setBusy(false); }
   }
   return (
@@ -158,6 +158,12 @@ function TrackForm({ initial, onSave, onCancel }) {
         <Field label="Audio URL (optional)"><input value={f.audioUrl || ""} onChange={set("audioUrl")} /></Field>
         <Field label="Cover override (optional)"><input value={f.image || ""} onChange={set("image")} /></Field>
         <Field label="Duration"><input placeholder="3:45" value={f.duration || ""} onChange={set("duration")} /></Field>
+        <Field label="Language of the song">
+          <select value={f.language || ""} onChange={set("language")}>
+            <option value="">Not set</option>
+            {Object.entries(LANGUAGES).map(([code, name]) => <option key={code} value={code}>{name}</option>)}
+          </select>
+        </Field>
       </div>
       <Field label="Lyrics"><textarea rows={10} value={f.lyrics || ""} onChange={set("lyrics")} /></Field>
       <div className="adm-actions">
@@ -215,7 +221,7 @@ export function Catalog() {
             <div className="adm-tracks">
               {a.tracks.map((t) => (
                 <div className="adm-row" key={t.id}>
-                  <div className="adm-grow">{t.title}{t.subtitle && <span className="adm-muted"> {t.subtitle}</span>}</div>
+                  <div className="adm-grow">{t.title}{t.subtitle && <span className="adm-muted"> {t.subtitle}</span>}{t.language && <span className="adm-muted"> · {langLabel(t.language)}</span>}</div>
                   <a className="adm-link" href={`/song/${t.slug}`} target="_blank" rel="noopener noreferrer">Open</a>
                   <button className="adm-link" type="button" onClick={() => setEdit({ kind: "track", album: a, track: t })}>Edit</button>
                   <button className="adm-link danger" type="button" onClick={() => remove("song", api.deleteTrack, t.id)}>Delete</button>

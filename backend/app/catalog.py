@@ -10,6 +10,53 @@ from . import config
 from .models import Album, Track
 
 
+# Languages of the music. Codes are stored on each song; labels are what visitors see.
+LANGUAGES = {
+    "en": "English", "sw": "Kiswahili", "fr": "Français", "de": "Deutsch", "pt-BR": "Português (Brasil)",
+    "ko": "한국어", "zh": "中文", "ru": "Русский", "es": "Español",
+}
+# Words that name a language, as they might appear in a Suno playlist or song title.
+_ALIASES = {
+    "en": ("english", "inglés", "ingles", "anglais"),
+    "sw": ("swahili", "kiswahili"),
+    "fr": ("french", "français", "francais", "francaise", "française"),
+    "de": ("german", "deutsch", "allemand"),
+    "pt-BR": ("portuguese", "português", "portugues", "brazilian", "brasil", "brazil", "pt-br", "ptbr"),
+    "ko": ("korean", "한국어", "korea"),
+    "zh": ("chinese", "中文", "mandarin", "china", "chinois"),
+    "ru": ("russian", "русский", "russia", "russe"),
+    "es": ("spanish", "español", "espanol", "spain", "espagnol", "castellano"),
+}
+_HANGUL = re.compile(r"[\uac00-\ud7af\u1100-\u11ff]")
+_KANA = re.compile(r"[\u3040-\u30ff]")
+_HAN = re.compile(r"[\u4e00-\u9fff]")
+_CYRILLIC = re.compile(r"[\u0400-\u04ff]")
+
+
+def detect_language(text: str) -> str:
+    """A language code when `text` clearly names or is written in one, else "".
+
+    Looks for a language name first ("Série - Español"), then for a distinctive writing system
+    (Hangul, Chinese characters, Cyrillic). Latin-script titles on their own are never guessed:
+    English, French, Spanish and Swahili look alike, so those are set from the playlist name or by hand.
+    """
+    text = text or ""
+    low = text.lower()
+    found = [code for code, names in _ALIASES.items()
+             if any(re.search(rf"(?<![a-z]){re.escape(n)}(?![a-z])", low) for n in names)]
+    if len(found) == 1:
+        return found[0]
+    if len(found) > 1:
+        return ""  # names several languages: do not guess
+    if _HANGUL.search(text):
+        return "ko"
+    if _HAN.search(text) and not _KANA.search(text):
+        return "zh"
+    if _CYRILLIC.search(text):
+        return "ru"
+    return ""
+
+
 def slugify(text: str) -> str:
     text = unicodedata.normalize("NFKD", text or "").encode("ascii", "ignore").decode()
     return re.sub(r"[^a-zA-Z0-9]+", "-", text.lower()).strip("-") or "song"
@@ -39,6 +86,8 @@ def track_out(t: Track) -> dict:
     d = {"id": t.id, "slug": t.slug, "title": t.title, "url": t.url, "duration": t.duration, "lyrics": t.lyrics}
     if t.subtitle:
         d["subtitle"] = t.subtitle
+    if t.language:
+        d["language"] = t.language
     if t.audio_url:
         d["audioUrl"] = t.audio_url
     if t.image:
@@ -101,6 +150,7 @@ def seed_catalog(db: Session) -> int:
                 album_id=album.id, slug=unique_slug(db, t["title"]), title=t["title"],
                 subtitle=t.get("subtitle", ""), url=t.get("url", ""), audio_url=t.get("audioUrl", ""),
                 image=t.get("image", ""), duration=t.get("duration", ""), lyrics=t.get("lyrics", ""), position=ti,
+                language=t.get("language", "") if t.get("language", "") in LANGUAGES else "",
             ))
             db.flush()
             added += 1

@@ -261,3 +261,15 @@ body.subpage { padding-bottom: 0; }
   .player-bar.expanded .player-cover { width: 96px; height: 96px; }
 }
 @media (prefers-reduced-motion: reduce) { .progress-fill, .play-btn-large { transition: none; } }
+
+/* ---- language filter and badges ---- */
+.lang-filter { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 28px; }
+.lang-filter button { font: inherit; font-size: 12px; letter-spacing: .06em; padding: 9px 16px; min-height: 44px; border: 1px solid var(--line); border-radius: 22px; background: transparent; color: var(--text); cursor: pointer; transition: border-color .2s, color .2s, background .2s; }
+.lang-filter button span { color: var(--muted); margin-left: 4px; font-size: 11px; }
+.lang-filter button:hover { border-color: var(--gold); color: var(--gold); }
+.lang-filter button[aria-pressed="true"] { background: var(--gold); border-color: var(--gold); color: var(--bg); }
+.lang-filter button[aria-pressed="true"] span { color: inherit; opacity: .8; }
+.lang-badge { display: inline-block; margin-left: 8px; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; padding: 2px 8px; border: 1px solid var(--line); border-radius: 12px; color: var(--muted); vertical-align: middle; }
+/* make Korean, Chinese and Russian text use a proper font on every device */
+[lang="ko"] { font-family: "Malgun Gothic", "Apple SD Gothic Neo", "Noto Sans KR", "Noto Sans CJK KR", sans-serif; }
+[lang="zh"] { font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans SC", "Noto Sans CJK SC", sans-serif; }

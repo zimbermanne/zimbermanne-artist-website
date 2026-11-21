@@ -39,3 +39,10 @@ export function fmtCount(n) {
   if (n >= 1e3) return (n / 1e3).toFixed(n >= 1e4 ? 0 : 1).replace(/\.0$/, "") + "K";
   return String(n);
 }
+
+// Languages of the music (codes match the back end). Labels are written in each language.
+export const LANGUAGES = {
+  en: "English", sw: "Kiswahili", fr: "Français", de: "Deutsch", "pt-BR": "Português (Brasil)",
+  ko: "한국어", zh: "中文", ru: "Русский", es: "Español",
+};
+export const langLabel = (code) => LANGUAGES[code] || "";
