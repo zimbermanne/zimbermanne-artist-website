@@ -1,6 +1,7 @@
 """Runs one source or all of them, records each run, and the background schedule."""
 import asyncio
 import logging
+import sys
 from datetime import datetime, timezone
 
 from sqlalchemy import select
@@ -12,6 +13,12 @@ from . import soundcloud, spotify, suno
 from .common import SyncError
 
 log = logging.getLogger("zimbermanne.sync")
+if not log.handlers:  # uvicorn only configures its own loggers, so give this one a place to write
+    _handler = logging.StreamHandler(sys.stdout)
+    _handler.setFormatter(logging.Formatter("%(levelname)s sync: %(message)s"))
+    log.addHandler(_handler)
+    log.setLevel(logging.INFO)
+    log.propagate = False
 SOURCES = {"suno": suno, "spotify": spotify, "soundcloud": soundcloud}
 _lock = {"busy": False}
 
@@ -40,6 +47,9 @@ def run_source(name: str) -> dict:
             run.summary, run.log = f"Unexpected error: {type(e).__name__}", f"{type(e).__name__}: {e}"
         db.add(run)
         db.commit()
+        log.info("%s %s: %s", name, "ok" if run.ok else "FAILED", run.summary)
+        for line in (run.log or "").splitlines():
+            log.info("%s | %s", name, line)
         return {"ok": run.ok, "summary": run.summary, "log": run.log}
 
 

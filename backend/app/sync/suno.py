@@ -309,9 +309,21 @@ def run(db: Session, client: httpx.Client | None = None) -> Report:
     client = client or httpx.Client(timeout=30, follow_redirects=True)
     try:
         html = fetch_profile(client, config.SUNO_HANDLE)
-        albums_data = [a for aid in parse_album_ids(html) if (a := fetch_album(client, aid))]
-        playlists_data = [p for pid in parse_playlist_ids(html) if (p := fetch_playlist(client, pid))]
-        res = apply_suno(db, html, albums_data, lambda sid: fetch_song_image(client, sid), report, playlists_data)
+        report.note(f"profile page: {len(parse_clips(html, config.SUNO_HANDLE))} songs listed directly")
+        album_ids, playlist_ids = parse_album_ids(html), parse_playlist_ids(html)
+        albums_data = [a for aid in album_ids if (a := fetch_album(client, aid))]
+        playlists_data = [p for pid in playlist_ids if (p := fetch_playlist(client, pid))]
+        for a in albums_data:
+            report.note(f"album {a.get('title')!r}: {len(a['clips'])} songs readable")
+        for p in playlists_data:
+            report.note(f"playlist {p.get('title')!r}: {len(p['clips'])} songs")
+        if len(albums_data) < len(album_ids) or len(playlists_data) < len(playlist_ids):
+            report.note(f"pages that could not be read: {len(album_ids) - len(albums_data)} albums, "
+                        f"{len(playlist_ids) - len(playlists_data)} playlists")
+        try:
+            res = apply_suno(db, html, albums_data, lambda sid: fetch_song_image(client, sid), report, playlists_data)
+        except SyncError as e:  # keep what was found, so the log shows where it went wrong
+            raise SyncError(str(e) + "\n" + "\n".join(report.lines)) from e
         db.commit()
         report.note(f"done: {res['songs']} songs, {res['albums']} albums, {res['added']} added")
         return report

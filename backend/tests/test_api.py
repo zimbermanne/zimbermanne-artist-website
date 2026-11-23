@@ -36,7 +36,11 @@ def test_public_flow():
         assert d["prev"] and d["next"]
         assert c.get("/api/song/nope").status_code == 404
         assert c.post("/api/visit", headers={"user-agent": "Mozilla/5.0"}).json()["views"] == 1
-        assert c.post("/api/visit").json()["views"] == 1  # same browser, cookie set
+        assert c.post("/api/visit", headers={"user-agent": "Mozilla/5.0"}).json()["views"] == 2  # a refresh counts too
+        assert c.post("/api/visit", headers={"user-agent": "Googlebot/2.1"}).json()["views"] == 2  # bots do not
+        assert c.post("/api/visit", headers={"user-agent": "curl/8.0"}).json()["views"] == 2
+        assert c.get("/api/site").json()["views"] == 2
+        assert "sunoUrl" not in c.get("/api/site").json()  # visitors are never pointed at the place the songs were made
         r = c.post("/api/contact", json={"name": "A", "email": "a@b.co", "message": "hi", "website": ""})
         assert r.json()["ok"]
         assert c.post("/api/subscribe", json={"email": "bad"}).status_code == 422
