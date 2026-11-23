@@ -83,8 +83,10 @@
 
     .btn-icon { background: rgba(201, 160, 99, 0.12); border: 1px solid var(--line); color: var(--gold); border-radius: 50%; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; font-size: 11px; transition: all 0.2s ease; }
     .btn-icon:hover { background: var(--gold); color: #000; transform: scale(1.08); }
+    .btn-icon.is-active { background: var(--gold); color: #000; }
     .btn-lyrics { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; padding: 4px 10px; border-radius: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--line); color: var(--muted); cursor: pointer; transition: all 0.2s ease; }
     .btn-lyrics:hover { color: var(--gold); border-color: var(--gold); background: rgba(201, 160, 99, 0.12); }
+    .track-plays { font-size: 10px; letter-spacing: 0.06em; color: var(--muted); background: rgba(201,160,99,0.08); border: 1px solid var(--line); border-radius: 10px; padding: 2px 7px; white-space: nowrap; }
 
     .contact { text-align: center; background: var(--panel); max-width: none; border-top: 1px solid var(--line); }
     .contact p { max-width: 540px; margin: 0 auto 2em; color: var(--muted); }
@@ -188,7 +190,9 @@ body.subpage { padding-bottom: 0; }
 
 
 /* ---------- player: desktop bar + phone mini bar / full-screen player ---------- */
-.player-now-playing { background: none; border: 0; padding: 0; color: inherit; font: inherit; text-align: left; cursor: default; -webkit-tap-highlight-color: transparent; }
+/* player now-playing: pointer on desktop, default on mobile (expanded sheet) */
+.player-now-playing { background: none; border: 0; padding: 0; color: inherit; font: inherit; text-align: left; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+@media (max-width: 768px) { .player-now-playing { cursor: default; } }
 .player-details > span { display: block; }
 .player-album-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .transport { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }

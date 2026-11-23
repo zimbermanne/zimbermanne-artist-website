@@ -91,7 +91,13 @@ export function AlbumShowcase({ album }) {
           <div className="ac-links">
             {tracks[0] && <button type="button" className="ac-btn" onClick={() => play(item(tracks[0]))}>Play the album</button>}
             {tracks[0] && <Link className="ac-btn" to={`/song/${tracks[0].slug}`}>Open first song</Link>}
-            <a className="ac-btn" href={SPOTIFY_ARTIST_URL} target="_blank" rel="noopener noreferrer">More on Spotify ↗</a>
+            {album.spotifyUrl
+              ? <a className="ac-btn" href={album.spotifyUrl} target="_blank" rel="noopener noreferrer">Listen on Spotify ↗</a>
+              : <a className="ac-btn" href={SPOTIFY_ARTIST_URL} target="_blank" rel="noopener noreferrer">More on Spotify ↗</a>
+            }
+            {album.soundcloudUrl && (
+              <a className="ac-btn" href={album.soundcloudUrl} target="_blank" rel="noopener noreferrer">Listen on SoundCloud ↗</a>
+            )}
           </div>
         )}
       </div>

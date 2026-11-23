@@ -7,6 +7,6 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
-    proxy: { "/api": backend, "/download": backend },
+    proxy: { "/api": backend, "/download": backend, "/static": backend },
   },
 });

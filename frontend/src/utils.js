@@ -11,7 +11,11 @@ export function listenLink(track) {  // the best other-platform page for one son
 }
 export const DEFAULT_SLUG = "pesa-inaongea-sana";
 
-export const coverOf = ({ track, album }) => track.image || album.cover;
+// Minimal gold-tinted placeholder rendered inline — no extra request needed.
+export const FALLBACK_COVER =
+  "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='600' height='600'%3E%3Crect width='600' height='600' fill='%230d121f'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' font-size='120' fill='%23c9a063'%3E♪%3C/text%3E%3C/svg%3E";
+
+export const coverOf = ({ track, album }) => track?.image || album?.cover || FALLBACK_COVER;
 export const hasAudio = (t) => !!(t.url || t.audioUrl);
 
 export function audioSrc(t) {

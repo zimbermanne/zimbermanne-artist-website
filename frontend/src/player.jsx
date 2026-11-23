@@ -233,9 +233,11 @@ export function PlayerBar() {
         </div>
       </div>
       <div className="player-right-actions">
-        <button className="btn-lyrics" type="button" onClick={() => openLyrics(current)}>Lyrics</button>
+        {track.lyrics && <button className="btn-lyrics" type="button" onClick={() => openLyrics(current)}>Lyrics</button>}
         <DownloadButton track={track} className="btn-lyrics" title="Download as MP3" />
-        <a className="btn btn-secondary" href={listenLink(track).href} target="_blank" rel="noopener noreferrer">{listenLink(track).label} ↗</a>
+        {(track.spotifyUrl || track.soundcloudUrl) && (
+          <a className="btn btn-secondary" href={listenLink(track).href} target="_blank" rel="noopener noreferrer">{listenLink(track).label} ↗</a>
+        )}
       </div>
     </div>
   );
@@ -256,7 +258,9 @@ export function LyricsModal() {
         <div className="modal-body">{it ? it.track.lyrics || "Lyrics coming soon." : ""}</div>
         <div className="modal-footer">
           <span style={{ fontSize: 12, color: "var(--muted)" }}>Zimbermanne · Afro Soul Pop</span>
-          <a className="btn" href={listenLink(it?.track).href} target="_blank" rel="noopener noreferrer" style={{ padding: "8px 16px", fontSize: 11 }}>{listenLink(it?.track).label} ↗</a>
+          {(it?.track?.spotifyUrl || it?.track?.soundcloudUrl) && (
+            <a className="btn" href={listenLink(it?.track).href} target="_blank" rel="noopener noreferrer" style={{ padding: "8px 16px", fontSize: 11 }}>{listenLink(it?.track).label} ↗</a>
+          )}
         </div>
       </div>
     </div>

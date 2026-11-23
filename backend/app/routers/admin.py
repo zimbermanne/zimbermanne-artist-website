@@ -39,6 +39,8 @@ class TrackIn(BaseModel):
     lyrics: str = ""
     language: str | None = None  # None = leave as it is
     position: int | None = None
+    spotifyUrl: str = ""
+    soundcloudUrl: str = ""
 
 
 def _language(code: str) -> str:
@@ -123,6 +125,7 @@ def create_track(album_id: int, body: TrackIn, db: Session = Depends(get_db)):
     t = Track(album_id=a.id, slug=catalog.unique_slug(db, body.title), title=body.title.strip(),
               subtitle=body.subtitle, url=body.url, audio_url=body.audioUrl, image=body.image,
               duration=body.duration, lyrics=body.lyrics, language=_language(body.language or ""),
+              spotify_url=body.spotifyUrl, soundcloud_url=body.soundcloudUrl,
               position=body.position if body.position is not None else (last if last is not None else -1) + 1)
     db.add(t)
     db.commit()
@@ -136,6 +139,7 @@ def update_track(track_id: int, body: TrackIn, db: Session = Depends(get_db)):
         t.slug = catalog.unique_slug(db, body.title, exclude_id=t.id)
     t.title, t.subtitle, t.url, t.audio_url = body.title.strip(), body.subtitle, body.url, body.audioUrl
     t.image, t.duration, t.lyrics = body.image, body.duration, body.lyrics
+    t.spotify_url, t.soundcloud_url = body.spotifyUrl, body.soundcloudUrl
     if body.language is not None:
         t.language = _language(body.language)
     if body.position is not None:

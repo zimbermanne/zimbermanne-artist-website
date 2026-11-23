@@ -103,7 +103,7 @@ export function Dashboard() {
 
 /* ---------- albums & songs ---------- */
 const blankAlbum = { title: "", number: "", tagline: "", description: "", cover: "", chips: [] };
-const blankTrack = { title: "", subtitle: "", url: "", audioUrl: "", image: "", duration: "", language: "", lyrics: "" };
+const blankTrack = { title: "", subtitle: "", url: "", audioUrl: "", image: "", duration: "", language: "", lyrics: "", spotifyUrl: "", soundcloudUrl: "" };
 
 function AlbumForm({ initial, onSave, onCancel }) {
   const [f, setF] = useState({ ...initial, chipsText: (initial.chips || []).join(", ") });
@@ -145,7 +145,7 @@ function TrackForm({ initial, onSave, onCancel }) {
   async function submit(e) {
     e.preventDefault();
     setBusy(true);
-    try { await onSave({ title: f.title, subtitle: f.subtitle, url: f.url, audioUrl: f.audioUrl, image: f.image, duration: f.duration, language: f.language || "", lyrics: f.lyrics }); }
+    try { await onSave({ title: f.title, subtitle: f.subtitle, url: f.url, audioUrl: f.audioUrl, image: f.image, duration: f.duration, language: f.language || "", lyrics: f.lyrics, spotifyUrl: f.spotifyUrl || "", soundcloudUrl: f.soundcloudUrl || "" }); }
     catch (x) { setErr(x.message); setBusy(false); }
   }
   return (
@@ -158,6 +158,8 @@ function TrackForm({ initial, onSave, onCancel }) {
         <Field label="Audio URL (optional)"><input value={f.audioUrl || ""} onChange={set("audioUrl")} /></Field>
         <Field label="Cover override (optional)"><input value={f.image || ""} onChange={set("image")} /></Field>
         <Field label="Duration"><input placeholder="3:45" value={f.duration || ""} onChange={set("duration")} /></Field>
+        <Field label="Spotify song URL"><input placeholder="https://open.spotify.com/track/…" value={f.spotifyUrl || ""} onChange={set("spotifyUrl")} /></Field>
+        <Field label="SoundCloud URL"><input placeholder="https://soundcloud.com/…" value={f.soundcloudUrl || ""} onChange={set("soundcloudUrl")} /></Field>
         <Field label="Language of the song">
           <select value={f.language || ""} onChange={set("language")}>
             <option value="">Not set</option>

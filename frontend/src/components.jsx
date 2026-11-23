@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { sendContact, subscribe } from "./api";
 import { DownloadButton, IconPause, IconPlay, usePlayer } from "./player";
 import { AlbumShowcase, useShowcaseSupported } from "./showcase";
-import { fmtCount, LANGUAGES, langLabel, SPOTIFY_ARTIST_URL } from "./utils";
+import { fmtCount, FALLBACK_COVER, LANGUAGES, langLabel, SPOTIFY_ARTIST_URL } from "./utils";
 
 /* ---- layout ---- */
 export function Nav({ home, views }) {
@@ -63,7 +63,8 @@ function Album({ album, index }) {
   return (
     <article className={`album${index % 2 === 1 ? " rev" : ""}`} id={album.id}>
       <div className="cover">
-        <img src={album.cover} alt={`${album.title} cover`} width="600" height="600" decoding="async" loading={index === 0 ? "eager" : "lazy"} />
+        <img src={album.cover || FALLBACK_COVER} alt={`${album.title} cover`} width="600" height="600" decoding="async" loading={index === 0 ? "eager" : "lazy"}
+          onError={(e) => { e.currentTarget.onerror = null; e.currentTarget.src = FALLBACK_COVER; }} />
       </div>
       <div>
         <div className="tag">{album.number}</div>
