@@ -219,6 +219,7 @@ export function ListenerStats({ stats = {} }) {
     [plays, "Total plays"],
     [stats.spotify_monthly_listeners, "Spotify monthly listeners"],
     [(stats.spotify_followers || 0) + (stats.soundcloud_followers || 0) + (stats.suno_followers || 0), "Followers"],
+    [stats.suno_albums, "Albums"],
     [stats.suno_songs, "Songs"],
   ].filter(([v]) => v > 0);
   if (!items.length) return null;

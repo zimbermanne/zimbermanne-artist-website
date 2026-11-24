@@ -17,15 +17,15 @@ LANGUAGES = {
 }
 # Words that name a language, as they might appear in a Suno playlist or song title.
 _ALIASES = {
-    "en": ("english", "inglés", "ingles", "anglais"),
-    "sw": ("swahili", "kiswahili"),
-    "fr": ("french", "français", "francais", "francaise", "française"),
-    "de": ("german", "deutsch", "allemand"),
-    "pt-BR": ("portuguese", "português", "portugues", "brazilian", "brasil", "brazil", "pt-br", "ptbr"),
+    "en": ("english", "weight of gold", "inglés", "ingles", "anglais"),
+    "sw": ("uzito wa dhahabu", "swahili", "kiswahili"),
+    "fr": ("poids de l'or", "french", "français", "francais", "francaise", "française"),
+    "de": ("gewicht des goldes", "german", "deutsch", "allemand"),
+    "pt-BR": ("peso do ouro", "portuguese", "português", "portugues", "brazilian", "brasil", "brazil", "pt-br", "ptbr"),
     "ko": ("korean", "한국어", "korea"),
     "zh": ("chinese", "中文", "mandarin", "china", "chinois"),
     "ru": ("russian", "русский", "russia", "russe"),
-    "es": ("spanish", "español", "espanol", "spain", "espagnol", "castellano"),
+    "es": ("peso del oro", "spanish", "español", "espanol", "spain", "espagnol", "castellano"),
 }
 _HANGUL = re.compile(r"[\uac00-\ud7af\u1100-\u11ff]")
 _KANA = re.compile(r"[\u3040-\u30ff]")

@@ -7,6 +7,7 @@ link that is already set is never changed; a same-title song with a different ID
 import json
 import re
 import time
+from html import unescape
 from html.parser import HTMLParser
 
 import httpx
@@ -112,6 +113,66 @@ def parse_playlist_ids(html: str) -> list[str]:
     return seen
 
 
+def _abbr(text: str) -> int:
+    """'222' -> 222, '1,234' -> 1234, '5.2K' -> 5200, '1.3M' -> 1300000."""
+    m = re.fullmatch(r"([\d.,]+)\s*([KkMm]?)", (text or "").strip())
+    if not m:
+        return 0
+    raw, unit = m[1], m[2].lower()
+    if not unit:
+        return int(re.sub(r"[.,]", "", raw) or 0)
+    try:
+        return int(round(float(raw.replace(",", "")) * {"k": 1_000, "m": 1_000_000}[unit]))
+    except ValueError:
+        return 0
+
+
+_NUM = r"\d[\d.,]*[KkMm]?"
+_HEADER = re.compile(rf"(?:(?P<plays>{_NUM})\s+(?P<likes>{_NUM})\s+)?(?P<songs>{_NUM})\s+songs?\s+(?P<followers>{_NUM})\s+followers?", re.I)
+
+
+def header_stats(html: str) -> dict:
+    """The numbers Suno prints at the top of the profile: songs, followers, plays (when shown).
+
+    They are read from the page's visible text ("222 songs 21 followers 16 following") because that is
+    the account-wide total. Adding up the songs we happened to find only ever gives part of it."""
+    text = re.sub(r"<(script|style)\b.*?</\1>", " ", html, flags=re.S | re.I)
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = re.sub(r"\s+", " ", unescape(text))
+    m = _HEADER.search(text)
+    if not m:
+        return {"plays": 0, "songs": 0, "followers": 0}
+    return {"plays": _abbr(m["plays"] or ""), "songs": _abbr(m["songs"]), "followers": _abbr(m["followers"])}
+
+
+# Playlist pages list their songs as page links, one row per song, not inside the hidden data block
+# the profile uses:  <img alt="Title artwork"> 3:34 <a href="/song/<id>">Title</a> ... <a href="/@owner">
+SONG_LINK_RE = re.compile(r'<a\b[^>]*?href="(?:https?://(?:www\.)?suno\.com)?/song/([0-9a-f]{8}-[0-9a-f-]{27})[^"]*"[^>]*>(.*?)</a>', re.I | re.S)
+OWNER_LINK_RE = re.compile(r'href="(?:https?://(?:www\.)?suno\.com)?/@([A-Za-z0-9_.-]+)', re.I)
+DURATION_RE = re.compile(r"\b(\d{1,2}:\d{2})\b")
+
+
+def parse_song_links(html: str, handle: str | None = None) -> dict[str, dict]:
+    """Songs listed as links (playlist pages), {song id: clip}, in page order. A song whose row names a
+    different creator is skipped; a row that names nobody is kept."""
+    found = list(SONG_LINK_RE.finditer(html))
+    clips: dict[str, dict] = {}
+    for i, m in enumerate(found):
+        cid = m[1].lower()
+        title = re.sub(r"\s+", " ", unescape(re.sub(r"<[^>]+>", " ", m[2]))).strip()
+        if not title or cid in clips or any(w in title for w in SKIP_WORDS):
+            continue
+        end = found[i + 1].start() if i + 1 < len(found) else len(html)
+        owners = {o.lower() for o in OWNER_LINK_RE.findall(html[m.end():min(end, m.end() + 1500)])}
+        if handle and owners and handle.lstrip("@").lower() not in owners:
+            continue
+        before = re.sub(r"<[^>]+>", " ", html[max(0, m.start() - 600):m.start()])
+        times = DURATION_RE.findall(before)
+        clips[cid] = {"id": cid, "title": title, "url": f"https://suno.com/song/{cid}", "audioUrl": audio_url(cid),
+                      "image": None, "plays": 0, "duration": times[-1] if times else ""}
+    return clips
+
+
 def parse_followers(html: str) -> int:
     return _number(html.replace('\\"', '"'), "follower_count", "num_followers", "followers_count")
 
@@ -151,7 +212,10 @@ def fetch_playlist(client: httpx.Client, playlist_id: str) -> dict | None:
     html = _get(client, f"https://suno.com/playlist/{playlist_id}")
     if not html:
         return None
-    return {"id": playlist_id, "title": parse_meta(html)["title"], "clips": parse_clips(html, config.SUNO_HANDLE)}
+    clips = parse_song_links(html, config.SUNO_HANDLE)
+    for cid, c in parse_clips(html, config.SUNO_HANDLE).items():  # the data block, when present, has plays and artwork
+        clips[cid] = {**clips.get(cid, {}), **{k: v for k, v in c.items() if v}}
+    return {"id": playlist_id, "title": parse_meta(html)["title"], "clips": clips}
 
 
 def fetch_song_image(client: httpx.Client, sid: str) -> str | None:
@@ -176,7 +240,7 @@ def _inbox(db: Session, first_image: str | None) -> Album:
 def _add_track(db: Session, album: Album, clip: dict, report: Report, language: str = ""):
     last = max([t.position for t in album.tracks] or [-1])
     t = Track(album_id=album.id, slug=catalog.unique_slug(db, clip["title"]), title=clip["title"], url=clip["url"],
-              audio_url=clip["audioUrl"], image=clip.get("image") or "", suno_plays=clip.get("plays", 0), position=last + 1, language=language)
+              audio_url=clip["audioUrl"], image=clip.get("image") or "", suno_plays=clip.get("plays", 0), duration=clip.get("duration", ""), position=last + 1, language=language)
     db.add(t)
     db.flush()
     album.tracks.append(t)
@@ -293,13 +357,18 @@ def apply_suno(db: Session, profile_html: str, albums_data: list[dict], song_ima
     if left_out:
         report.note(f"more than {config.SYNC_MAX_NEW} new songs, left for the next run: {', '.join(left_out[:15])}")
 
-    # 5. numbers for the site
-    mine = [c for cid, c in clips.items() if cid in known]
-    set_stat(db, "suno_plays", sum(c["plays"] for c in mine))
-    set_stat(db, "suno_songs", len(clips))
-    followers = parse_followers(profile_html)
-    if followers:
-        set_stat(db, "suno_followers", followers)
+    # 5. numbers for the site: the account totals Suno shows on the profile, falling back to what we found
+    head = header_stats(profile_html)
+    seen_plays = sum(c["plays"] for c in clips.values())          # every song we saw, not only the ones on the site
+    plays = max(head["plays"], seen_plays)
+    songs = head["songs"] or len(clips)
+    followers = head["followers"] or parse_followers(profile_html)
+    album_count = len(parse_album_ids(profile_html))
+    for key, value in (("suno_plays", plays), ("suno_songs", songs), ("suno_followers", followers), ("suno_albums", album_count)):
+        if value:
+            set_stat(db, key, value)
+    report.note(f"stats: {plays} plays, {songs} songs, {followers} followers, {album_count} albums "
+                f"(profile header read: {'yes' if head['songs'] else 'no'})")
     return {"songs": len(clips), "albums": len(albums_data), "added": added}
 
 

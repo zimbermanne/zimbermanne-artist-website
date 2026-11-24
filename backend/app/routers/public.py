@@ -26,7 +26,7 @@ def _views(db: Session) -> int:
 
 @router.get("/api/music")
 def music(db: Session = Depends(get_db)):
-    return {"albums": [catalog.album_out(a) for a in catalog.ordered_albums(db)]}
+    return {"albums": [catalog.album_out(a) for a in catalog.ordered_albums(db) if a.tracks]}  # no empty album cards
 
 
 @router.get("/api/song/{slug}")
