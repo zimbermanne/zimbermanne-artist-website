@@ -1,0 +1,103 @@
+/* Mobile and readability fixes. Loaded last (see main.jsx) so it refines site.css and theme.css.
+   Desktop layout is not touched: everything that moves things around sits inside the phone media query. */
+
+/* ---- readable text in both themes (all screen sizes) ----
+   .story p and the lyrics pop-up used fixed pale colours that nearly vanish on the light theme. */
+:root { --body-text: #cfc8ba; }
+@media (prefers-color-scheme: light) { :root { --body-text: #3a352b; } }
+.story p, .modal-body { color: var(--body-text); }
+
+/* a grid must never force sideways scrolling on a narrow phone */
+.listen-grid { grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr)); }
+.listen-grid iframe { width: 100%; max-width: 100%; }
+
+/* forms: 16px text stops iPhones zooming in when a field is tapped */
+.contact-form input, .contact-form textarea, .subscribe-form input[type=email] { font-size: 16px; }
+.contact-form textarea { min-height: 120px; resize: vertical; }
+
+a, button { -webkit-tap-highlight-color: rgba(154, 111, 44, .18); touch-action: manipulation; }
+
+@media (max-width: 768px) {
+  html { scroll-padding-top: 112px; }
+  body { font-size: 16px; -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
+
+  /* ---- top bar: row 1 = name + view count, row 2 = links that are easy to tap ---- */
+  nav { flex-wrap: wrap; align-items: center; row-gap: 6px; padding: 8px max(16px, env(safe-area-inset-right)) 6px max(16px, env(safe-area-inset-left)); }
+  nav .brand { order: 1; min-height: 44px; display: flex; align-items: center; }
+  nav .nav-links { display: contents; }
+  nav .nav-links .visitor-badge { order: 2; margin-left: auto; }
+  nav::after { content: ""; order: 3; flex: 0 0 100%; height: 0; }
+  nav .nav-links a, nav .nav-links a:not(:last-child) {
+    order: 4; display: flex; align-items: center; justify-content: center; flex: 1 1 0; min-width: 0;
+    min-height: 44px; padding: 0 4px; font-size: 11px; letter-spacing: .06em; white-space: nowrap;
+  }
+  nav .nav-links a:active { color: var(--gold); }
+
+  /* ---- hero ---- */
+  .hero { padding: 48px 20px 44px; }
+  .kicker { font-size: 11px; letter-spacing: .24em; line-height: 1.8; }
+  .script { margin-bottom: 8px; }
+  .hero p { font-size: 16px; margin: 1em auto 1.8em; }
+  .btn { min-height: 44px; }
+  .hero .btn { display: flex; width: 100%; max-width: 340px; margin: 0 auto 12px; min-height: 52px; }
+
+  /* ---- sections ---- */
+  section { padding: 56px 20px; }
+  .story { padding-top: 40px; }
+  .about { gap: 28px; }
+  .pillars div { padding: 18px 20px; }
+  .story p { font-size: 17px; line-height: 1.75; }
+  .story p:first-of-type::first-letter { font-size: 54px; padding: 4px 10px 0 0; }
+  .story blockquote { font-size: 26px; padding-left: 18px; margin: 1.6em 0; }
+
+  /* ---- albums and song list ---- */
+  .album-header-bar { margin-bottom: 24px; }
+  .album { margin-bottom: 40px; border-radius: 14px; }
+  .album h3 { font-size: 30px; }
+  .chips { margin-bottom: 18px; }
+  .tracks a.track-title { display: block; padding: 10px 0; }         /* a 44px+ tall tap area */
+  .tracks .btn-lyrics { min-height: 44px; padding: 0 16px; font-size: 11px; }
+  .tracks .btn-icon { width: 44px; height: 44px; font-size: 13px; }
+  .tracks .track-actions { gap: 10px; }
+  .tracks li { padding: 12px 2px; }
+
+  /* ---- subscribe, contact, social ---- */
+  .subscribe-form { flex-direction: column; align-items: stretch; }
+  .subscribe-form input[type=email] { flex: 0 0 auto; max-width: none; width: 100%; min-height: 52px; }
+  .subscribe-form .btn, .contact-form .btn { width: 100%; min-height: 52px; }
+  .contact-form input { min-height: 52px; }
+  .whatsapp-wrap .btn { width: 100%; max-width: 340px; min-height: 52px; }
+  .social { gap: 10px; }
+  .social a { flex: 1 1 calc(50% - 10px); min-width: 140px; min-height: 56px; padding: 10px 12px; text-align: center; letter-spacing: .1em; }
+  footer { padding: 28px 20px 36px; }
+
+  /* ---- lyrics pop-up: a sheet from the bottom, easy to close ---- */
+  .modal-overlay { padding: 0; align-items: flex-end; }
+  .modal-card { max-width: none; width: 100%; max-height: 88vh; max-height: 88dvh; border-radius: 18px 18px 0 0; }
+  .modal-header { padding: 12px 8px 12px 20px; }
+  .modal-header .close-btn { width: 44px; height: 44px; font-size: 28px; display: inline-flex; align-items: center; justify-content: center; }
+  .modal-body { padding: 20px 20px 28px; font-size: 16px; line-height: 1.75; }
+  .modal-footer { padding: 12px 20px calc(12px + env(safe-area-inset-bottom)); gap: 10px; flex-wrap: wrap; }
+
+  /* ---- single song page ---- */
+  .song { padding: 24px 20px 56px; gap: 28px; }
+  .song-actions .btn { flex: 1 1 100%; min-height: 52px; }
+  .song-nav { flex-direction: column; gap: 4px; }
+  .song-nav a { display: flex; align-items: center; min-height: 44px; }
+  .song-audio { min-height: 48px; }
+  .song-lyrics { font-size: 17px; }
+}
+
+/* very small phones (iPhone SE, small Androids) */
+@media (max-width: 360px) {
+  nav .brand b { font-size: 14px; letter-spacing: .08em; }
+  nav .nav-links a, nav .nav-links a:not(:last-child) { font-size: 10px; letter-spacing: .03em; padding: 0 2px; }
+  .visitor-badge { padding: 3px 8px; }
+  .album { padding: 16px 12px; }
+  .social a { flex-basis: 100%; }
+}
+
+/* touch screens have no hover: skip the hover "lift" effects so taps never leave something shifted */
+@media (hover: none) {
+  .pillars div:hover, .cover img:hover, .social a:hover, .btn-icon:hover { transform: none; }
+}

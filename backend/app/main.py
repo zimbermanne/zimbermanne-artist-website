@@ -7,6 +7,8 @@ from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, Response
 from pathlib import Path
 from fastapi.staticfiles import StaticFiles
+
+from .staticfiles import FallbackStaticFiles
 from sqlalchemy import select
 
 import asyncio
@@ -77,7 +79,7 @@ def sitemap():
 # ---- serve local static files (album artwork, favicons, etc.) ----
 STATIC_DIR = config.ROOT / "static"
 STATIC_DIR.mkdir(parents=True, exist_ok=True)
-app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
+app.mount("/static", FallbackStaticFiles(directory=STATIC_DIR, fallback=config.FRONTEND_DIST / "static"), name="static")
 
 # ---- serve the built React app (production: one Railway service) ----
 DIST = config.FRONTEND_DIST
